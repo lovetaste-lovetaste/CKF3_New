@@ -13,7 +13,10 @@ extern int g_fIsTraceLine;
 
 LINK_ENTITY_TO_CLASS( buildable_sentry, CBuildSentry );
 LINK_ENTITY_TO_CLASS( buildable_dispenser, CBuildDispenser );
-LINK_ENTITY_TO_CLASS( buildable_teleporter, CBuildTeleporter );
+LINK_ENTITY_TO_CLASS( buildable_teleporter, CBuildTeleporter ); 
+
+CBaseBuildable* g_Buildables[3][5][MAX_BUILDABLES_PER_BUCKET];
+int g_BuildableCount[3][5];
 
 int CBaseBuildable::TakeDamage(entvars_t *pevInflictor, entvars_t *pevAttacker, float flDamage, int bitsDamageType, int iCrit)
 {
@@ -92,6 +95,20 @@ void CBaseBuildable::Killed(entvars_t *pevAttacker, int iGib)
 
 	SetThink(&CBaseEntity::SUB_Remove);
 	pev->nextthink = gpGlobals->time + 0.1;
+
+	int iClass = GetBuildClass();
+	if (iClass >= 1 && iClass <= 4 && m_iTeam >= 1 && m_iTeam <= 2)
+	{
+		int& count = g_BuildableCount[m_iTeam][iClass];
+		for (int i = 0; i < count; ++i)
+		{
+			if (g_Buildables[m_iTeam][iClass][i] == this)
+			{
+				g_Buildables[m_iTeam][iClass][i] = g_Buildables[m_iTeam][iClass][--count];
+				break;
+			}
+		}
+	}
 }
 
 void CBaseBuildable::TraceAttack(entvars_t *pevAttacker, float flDamage, Vector vecDir, TraceResult *ptr, int bitsDamageType, int iCrit)
@@ -169,8 +186,22 @@ void CBaseBuildable::Undeploy(void)
 	pev->takedamage = DAMAGE_NO;
 	pev->effects |= EF_NODRAW;
 	//make it out of the world just in case
-	pev->origin.z -= 8192;
+	pev->origin.z -= 8192; // this caused a bug with teleporters but it should be fixed. DO NOT TOUCH THIS!!!!!!!!!!!!!!!!!!
 	UTIL_SetOrigin(pev, pev->origin);
+
+	int iClass = GetBuildClass();
+	if (iClass >= 1 && iClass <= 4 && m_iTeam >= 1 && m_iTeam <= 2)
+	{
+		int& count = g_BuildableCount[m_iTeam][iClass];
+		for (int i = 0; i < count; ++i)
+		{
+			if (g_Buildables[m_iTeam][iClass][i] == this)
+			{
+				g_Buildables[m_iTeam][iClass][i] = g_Buildables[m_iTeam][iClass][--count];
+				break;
+			}
+		}
+	}
 }
 
 void CBaseBuildable::Rebuild(Vector vecOrigin, Vector vecAngles)
@@ -195,10 +226,17 @@ void CBaseBuildable::Spawn(void)
 	pev->deadflag = DEAD_NO;
 	pev->gravity = 1;
 
-	pev->colormap = (m_iTeam == TEAM_RED) ? (1 | (1<<8)) : (140 | (140<<8));
-	pev->skin = (m_iTeam == TEAM_RED) ? 0: 1;
-}
+	pev->colormap = (m_iTeam == TEAM_RED) ? (1 | (1 << 8)) : (140 | (140 << 8));
+	pev->skin = (m_iTeam == TEAM_RED) ? 0 : 1;
 
+	int iClass = GetBuildClass();
+	if (iClass >= 1 && iClass <= 4 && m_iTeam >= 1 && m_iTeam <= 2)
+	{
+		int& count = g_BuildableCount[m_iTeam][iClass];
+		if (count < MAX_BUILDABLES_PER_BUCKET)
+			g_Buildables[m_iTeam][iClass][count++] = this;
+	}
+}
 //Sentry Gun
 
 void CBuildSentry::Precache( void )
@@ -590,7 +628,7 @@ void CBuildSentry::ScanThink(void)
 	}
 
 	// Acquire Target
-	if (m_hEnemy == NULL && m_iAmmo)
+	if (m_hEnemy == NULL)// && (m_iAmmo || (m_iLevel == 3 && m_iRocket)))
 		LookForTarget();
 
 	if(m_hEnemy)
@@ -661,7 +699,7 @@ void CBuildSentry::ActiveThink(void)
 	if(g_pGameRules->m_iRoundStatus == ROUND_END && g_pGameRules->m_iRoundWinStatus != m_pPlayer->m_iTeam)
 		return;
 
-	if (!m_hEnemy || !m_iAmmo)
+	if (!m_hEnemy)// || (!m_iAmmo && !(m_iLevel == 3 && m_iRocket)))
 	{
 		bStopActive = TRUE;
 		bStopImmediately = TRUE;
@@ -710,22 +748,15 @@ void CBuildSentry::ActiveThink(void)
 		UTIL_MakeAimVectors(m_vecCurAngles);
 
 		Vector vecLOS = vecDirToEnemy.Normalize();
+		// Is the Gun looking at the target  
+		BOOL bAimed = (DotProduct(vecLOS, gpGlobals->v_forward) > 0.887);
+		fAttack = (bAimed && m_iAmmo) ? TRUE : FALSE;
 
-		// Is the Gun looking at the target
-		if (DotProduct(vecLOS, gpGlobals->v_forward) <= 0.887) // 30 degree slop cos(30)
-			fAttack = FALSE;
-		else if(!m_iAmmo)
-			fAttack = FALSE;
-		else
-			fAttack = TRUE;
-
-		// fire the gun
+		// fire the gun  
 		if (!bStopActive && fAttack && m_flNextAttack <= gpGlobals->time)
 		{
-			if(m_iLevel == 1)
-			{
+			if (m_iLevel == 1)
 				vecSrc = vecMid + gpGlobals->v_up * 8 + gpGlobals->v_forward * 6;
-			}
 			else
 			{
 				float flGun = (m_iAmmo % 2) ? 8 : -8;
@@ -733,11 +764,13 @@ void CBuildSentry::ActiveThink(void)
 			}
 			Shoot(vecSrc, gpGlobals->v_forward);
 			m_flNextAttack = gpGlobals->time + m_flROF;
-			if(m_iLevel == 3 && m_iRocket && m_flNextRocket <= gpGlobals->time)
-			{
-				ShootRocketPre(m_hEnemy->pev, vecMid, vecMidEnemy);
-				m_flNextRocket = gpGlobals->time + 4;
-			}
+		}
+
+		// fire rockets
+		if (!bStopActive && m_iLevel == 3 && m_iRocket && bAimed && m_flNextRocket <= gpGlobals->time)
+		{
+			ShootRocketPre(m_hEnemy->pev, vecMid, vecMidEnemy);
+			m_flNextRocket = gpGlobals->time + 4;
 		}
 	}
 

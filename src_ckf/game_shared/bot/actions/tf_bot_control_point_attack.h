@@ -15,8 +15,10 @@ public:
 	{
 		return false;
 	}
-private:
-	CControlPoint* GetClosestControlPoint(CBot* me);
+	virtual bool ShouldRetreat(CBot* me)
+	{
+		return false;
+	}
 };
 
 #endif

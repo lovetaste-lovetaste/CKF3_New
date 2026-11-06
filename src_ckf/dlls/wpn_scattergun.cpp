@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 #include "weapons.h"
+#include "bot/hl_bot_manager.h"
 
 enum scattergun_e
 {
@@ -25,7 +26,7 @@ void CScattergun::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_SCATTERGUN;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 3;
 	m_iDefaultAmmo = SCATTERGUN_DEFAULT_GIVE;
 	FallInit();
@@ -46,6 +47,8 @@ void CScattergun::Precache(void)
 	m_flBaseFiringRate = 0.64;
 	m_flBaseDamage = 6;
 	m_flBaseReloadRate = 0.56;
+	m_flBaseMaxRange = -1.0f;
+	m_iBaseExtraShots = 9;
 }
 
 int CScattergun::GetItemInfo(ItemInfo *p)
@@ -69,7 +72,7 @@ BOOL CScattergun::Deploy(void)
 {
 	m_fInSpecialReload = 0;
 
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_scattergun.mdl"), "models/CKF_III/wp_group_rf.mdl", SCATTERGUN_DRAW, 0, 0, "shotgun", 9);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_scattergun.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), SCATTERGUN_DRAW, 0, 0, "shotgun", 9);
 }
 
 void CScattergun::PrimaryAttack(void)
@@ -107,7 +110,7 @@ void CScattergun::PrimaryAttack(void)
 	{
 		m_pPlayer->CKFFireBullets(vecSrc, gpGlobals->v_forward, 0.0, 8192, BULLET_PLAYER_TF2, int(GetDamage()), iCrit, m_pPlayer->pev, m_pPlayer->random_seed, FALSE);
 	}
-	int iMaxBurst = (m_iShotsFired) ? 10 : 9;
+	int iMaxBurst = (m_iShotsFired) ? GetExtraShots() + 1 : GetExtraShots();
 
 	for(int iBurst = 0; iBurst < iMaxBurst; iBurst ++)
 	{
@@ -137,6 +140,8 @@ void CScattergun::PrimaryAttack(void)
 	SendWeaponAnim(SCATTERGUN_SHOOT, UseDecrement() != FALSE);//Send weapon anim before tracer
 	
 	m_pPlayer->SetAnimation(PLAYER_ATTACK1);
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CScattergun::Reload(void)

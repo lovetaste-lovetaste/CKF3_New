@@ -58,14 +58,15 @@ ItemDef g_ItemDefs[ITEM_COUNT] =
     "weapon_rocketlauncher",   
     { {ATK_CLIP, 3}, {HIT_HEAL, 20.0} }, 
     ALLOWED_SOLDIER, 
-    "models/chicken_fortress_2/v_blackbox.mdl" },
-
+    "models/chicken_fortress_2/v_blackbox.mdl",
+    "models/ckf_III/w_blackbox.mdl" },
+    
     { ITEM_AXTINGUISHER,      
     "weapon_fireaxe",          
-    { {HITCOND_CRIT_BURNING, 1.0}, {ATK_DAMAGE, 44.0} }, 
+    { {HITCOND_CRIT_BURNING, 1.0}, {ATK_DAMAGE, 44.0}, {NO_RANDOM_CRITS, 1.0} },
     ALLOWED_PYRO, 
     "models/chicken_fortress_2/v_extinguisher.mdl", 
-    "models/chicken_fortress_2/p_extinguisher.mdl" },
+    "models/ckf_III/w_axetinguisher.mdl" },
 
     { ITEM_ETERNAL_REWARD,    
     "weapon_butterfly",        

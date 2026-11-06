@@ -15,9 +15,11 @@ public:
 	{
 		return false;
 	}
-
-	CNavArea* m_cover;
-	CountdownTimer m_recomputeCoverArea;
+	virtual bool ShouldRetreat(CBot* me)
+	{
+		return false;
+		// kinda on the nose LOLOL
+	}
 	CountdownTimer m_recomputeRetreatSpot;
 };
 

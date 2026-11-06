@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 #include "weapons.h"
+#include "bot/hl_bot_manager.h"
 
 enum sniperifle_e
 {
@@ -23,7 +24,7 @@ void CSniperifle::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_SNIPERIFLE;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 20;
 	m_iDefaultAmmo = SNIPERIFLE_DEFAULT_GIVE;
 	m_pSpot = m_pDSpot = NULL;
@@ -40,6 +41,8 @@ void CSniperifle::Precache(void)
 	m_flBaseFiringRate = 1.5;
 	m_flBaseDamage = 50.0;
 	m_flBaseReloadRate = -1.0f;
+	m_flBaseMaxRange = -1.0f;
+	m_iBaseExtraShots = -1;
 }
 
 int CSniperifle::GetItemInfo(ItemInfo *p)
@@ -64,7 +67,7 @@ BOOL CSniperifle::Deploy(void)
 	m_iWeaponState &= ~WEAPONSTATE_CHARGING;
 	m_fSpotActive = 0;
 
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_sniperifle.mdl"), "models/CKF_III/wp_group_rf.mdl", SNIPERIFLE_DRAW, 0, 0, "shotgun", 57);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_sniperifle.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), SNIPERIFLE_DRAW, 0, 0, "shotgun", 57);
 }
 
 BOOL CSniperifle::CanHolster(void)
@@ -189,6 +192,8 @@ void CSniperifle::SniperifleFire(void)
 	UpdateSpot();
 
 	SendWeaponAnim(SNIPERIFLE_FIRE, UseDecrement() != FALSE);
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CSniperifle::ItemPostFrame(void)

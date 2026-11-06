@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 #include "weapons.h"
+#include "bot/hl_bot_manager.h"
 
 enum revolver_e
 {
@@ -23,7 +24,7 @@ void CRevolver::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_REVOLVER;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 16;
 
 	m_iDefaultAmmo = REVOLVER_DEFAULT_GIVE;
@@ -39,6 +40,8 @@ void CRevolver::Precache(void)
 	m_flBaseFiringRate = 0.58;
 	m_flBaseDamage = 40;
 	m_flBaseReloadRate = 1.16;
+	m_flBaseMaxRange = -1.0f;
+	m_iBaseExtraShots = -1;
 }
 
 int CRevolver::GetItemInfo(ItemInfo *p)
@@ -59,7 +62,7 @@ int CRevolver::GetItemInfo(ItemInfo *p)
 
 BOOL CRevolver::Deploy(void)
 {
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_revolver.mdl"), "models/CKF_III/wp_group_rf.mdl", REVOLVER_DRAW, 0, 0, "shotgun", 48);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_revolver.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), REVOLVER_DRAW, 0, 0, "shotgun", 48);
 }
 
 void CRevolver::PrimaryAttack(void)
@@ -114,6 +117,8 @@ void CRevolver::RevolverFire(void)
 	m_pPlayer->SetAnimation(PLAYER_ATTACK1);
 
 	m_fInReload = false;
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CRevolver::SecondaryAttack(void)

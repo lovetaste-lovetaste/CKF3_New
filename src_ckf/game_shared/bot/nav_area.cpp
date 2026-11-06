@@ -4841,7 +4841,7 @@ Vector CNavArea::GetRandomPoint(void) const
 	const Extent *extent = GetExtent();
 
 	Vector spot;
-	spot.x = RANDOM_FLOAT(extent->lo.x, extent->hi.x);
+	spot.x = RANDOM_FLOAT(extent->lo.x, extent->hi.x); // THIS IS WHERE THE EXCEPTION OCCURS
 	spot.y = RANDOM_FLOAT(extent->lo.y, extent->hi.y);
 	spot.z = GetZ(spot.x, spot.y);
 

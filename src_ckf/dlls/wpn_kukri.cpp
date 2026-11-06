@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 #include "weapons.h"
+#include "bot/hl_bot_manager.h"
 
 #define	KNIFE_BODYHIT_VOLUME 128
 #define	KNIFE_WALLHIT_VOLUME 512
@@ -29,7 +30,7 @@ void CKukri::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_KUKRI;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 21;
 	m_iClip = WEAPON_NOCLIP;
 	FallInit();
@@ -65,7 +66,7 @@ BOOL CKukri::Deploy(void)
 {
 	m_iShotsFired = 0;
 
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_kukri.mdl"), "models/CKF_III/wp_group_rf.mdl", KUKRI_DRAW, 0, 0, "knife", 60);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_kukri.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), KUKRI_DRAW, 0, 0, "knife", 60);
 }
 
 void CKukri::Holster(int skiplocal)
@@ -81,13 +82,15 @@ void CKukri::PrimaryAttack(void)
 	SendWeaponAnim(KUKRI_SLASH1 + (m_iShotsFired++) % 2, UseDecrement() != FALSE);
 	m_pPlayer->SetAnimation(PLAYER_ATTACK1);
 	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + GetFiringRate();
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CKukri::Swing(void)
 {
 	UTIL_MakeVectors(m_pPlayer->pev->v_angle);
 	Vector vecSrc = m_pPlayer->GetGunPosition();
-	Vector vecEnd = vecSrc + gpGlobals->v_forward * 48;
+	Vector vecEnd = vecSrc + gpGlobals->v_forward * GetMaxRange();
 
 	PLAYBACK_EVENT_FULL(FEV_NOTHOST, m_pPlayer->edict(), m_usFireScript, 0, (float *)&g_vecZero, (float *)&g_vecZero, m_iMeleeCrit, 0, WEAPON_KUKRI, 0, (m_iMeleeCrit >= 2) ? TRUE : FALSE, 0);
 

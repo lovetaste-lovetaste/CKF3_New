@@ -1,15 +1,14 @@
 #ifndef ROOSTER_BOT_H
 #define ROOSTER_BOT_H
 
-// shoddy bot made to test things out
-// port from rooster fortress
-// THIS WILL BE REDONE, REPLACED WITH A VERSION SIMILAR TO THE NEXTBOT SYSTEM
-// jakulo: dont expect this
-
 #include "nav_path.h"
 #include "trigger.h"
 #include "known_entity.h"
 #include "hl_bot_action_interface.h"
+#include "hl_bot_aim_interface.h"
+#include "hl_bot_fight_manager.h"
+#include "GameEvent.h"
+#include "hl_bot_learning.h"
 
 #define FOR_EACH_VEC( vecName, iteratorName ) \
 	for ( int iteratorName = 0; iteratorName < vecName.Count(); iteratorName++ )
@@ -31,6 +30,7 @@ public:
 	virtual void Spawn(void);
 
 	void Think(void);
+	void OnEvent(GameEventType event, CBaseEntity* entity, CBaseEntity* other);
 
 	float GetMoveSpeed(void) const;
 	void MoveForward(void);
@@ -44,19 +44,17 @@ public:
 	void MoveTowardPos(const Vector& pos);
 
 	// recompute goal
-	void SetPathToGoal(const Vector& goal);
-	void SetPathToGoal(CBasePlayer* goal);
-	void SetPathToGoal(CBaseEntity* goal);
+	void SetPathToGoal(const Vector& goal, RouteType routeType = NORMAL_ROUTE);
+	void SetPathToGoal(CBasePlayer* goal, RouteType routeType = NORMAL_ROUTE);
+	void SetPathToGoal(CBaseEntity* goal, RouteType routeType = NORMAL_ROUTE);
 	bool HasPath(void) { return m_path.IsValid(); }
-	void ForcePath(CNavPath path) { m_path = path; } // dont use this
-	bool MakePath(CNavArea* endArea)
+	void ForcePath(CNavPath path) { m_path = path; } // only use this if u know what ur doing!!!!!!!!!!!!!
+	bool MakePath(CNavArea* endArea, const Vector& goal)
 	{
-		// only use this if u know what ur doing
 		if (!endArea)
 			return false;
-
+		// only use this if u know what ur doing!!!!!!!!!!!!!
 		Vector start = pev->origin;
-		Vector goal = *endArea->GetCenter();
 
 		if (!m_path.BuildFromParentChain(&start, &goal, endArea))
 		{
@@ -68,6 +66,13 @@ public:
 		m_pathGoal = goal;
 		return true;
 	}
+	bool MakePath(CNavArea* endArea)
+	{
+		if (!endArea)
+			return false;
+		return MakePath(endArea, *endArea->GetCenter());
+	}
+	
 	void StopPath()
 	{
 		if (!HasPath())
@@ -75,13 +80,16 @@ public:
 
 		m_path.Invalidate();
 	}
+	bool IsStuckFor(float duration) const { return m_stuckTimer.IsGreaterThen(duration); }
 
 	CNavPath m_path;					// the path itself
 	CNavPathFollower m_pathfollower;	// pathfollower + the improv is in here
 	Vector m_pathGoal;					// where the current path leads
 	CountdownTimer m_repathTimer;		// limits how often we recompute the path
 
-	bool HasEnemy() { return m_hEnemy && m_hEnemy->IsPlayer(); }
+	CTFBotAimInterface m_aimInterface;
+
+	bool HasEnemy() { return m_hEnemy && !FNullEnt(m_hEnemy->pev) && (m_hEnemy->Classify() == CLASS_BUILDABLE || m_hEnemy->IsPlayer()); }
 	CBaseEntity* GetEnemy()
 	{
 		CBaseEntity* e = m_hEnemy;
@@ -97,6 +105,8 @@ public:
 	CUtlVector< CKnownEntity > m_knownEntityVector;		// the set of enemies/friends we are aware of
 	const CKnownEntity* GetPrimaryKnownThreat(bool onlyVisibleThreats = true);
 	const CKnownEntity* GetPrimaryKnownTeammate(bool onlyVisibleThreats = true);
+
+	float m_flLastWeaponHeard;
 private:
 	// decision logic
 	void Update(void);
@@ -108,6 +118,7 @@ private:
 	void UpdateStuckMonitor(void);
 
 	CTFAction* DesiredAction(int forceclass = 0);
+	void SelectDesiredWeapon();
 
 	void UpdateKnownEntities(void);
 
@@ -157,13 +168,15 @@ public:
 
 	bool operator() (CBasePlayer* player)
 	{
-		if (!player->IsAlive())
+		if (!player->IsAlive() || player->IsPlayerCloaked())
 			return true;
 
 		if (player->m_iTeam != TEAM_RED && player->m_iTeam != TEAM_BLUE)
 			return true;
 
-		if (m_team != -2 && player->m_iTeam != m_team)
+		int team = player->IsPlayerDisguised() ? player->m_iDisguiseTeam : player->m_iTeam;
+
+		if (m_team != -2 && team != m_team)
 			return true;
 
 		if ( player->m_iCloak == CLOAK_YES || player->m_iDisguise == DISGUISE_YES )
@@ -245,28 +258,32 @@ public:
 
 	bool operator() (CBaseEntity* entity)
 	{
-		if (entity &&
-			entity->IsAlive() &&
-			m_me->FVisible(entity)
-			&& m_me->FInViewCone(entity))
-		{
-			if (entity->IsPlayer())
-			{
-				CBasePlayer* player = (CBasePlayer*)entity;
-				if (player->IsPlayerCloaked())
-				{
-					return true;
-				}
-				if (player->IsPlayerDisguised() && player->m_iDisguiseTeam == m_me->m_iTeam)
-				{
-					// has to specifically be disguised as my team to be fooled
-					return true;
-				}
-			}
+		if (!entity || entity == m_me || !entity->IsAlive())
+			return true;
 
-			m_recognized.AddToTail(entity);
+		if (entity->IsPlayer())
+		{
+			CBasePlayer* player = (CBasePlayer*)entity;
+			if (player->IsPlayerCloaked())
+				return true;
+			if (player->IsPlayerDisguised() && player->m_iDisguiseTeam == m_me->m_iTeam)
+				return true;
 		}
 
+		if (entity->Classify() == CLASS_BUILDABLE)
+		{
+			// nothing
+			// TODO: check for buildings that are disabled/being carried
+		}
+
+		if ((entity->pev->origin - m_me->pev->origin).Length() > 2048.0f)
+			return true;
+		if (!m_me->FInViewCone(entity))
+			return true;
+		if (!m_me->FVisible(entity))
+			return true;
+
+		m_recognized.AddToTail(entity);
 		return true;
 	}
 
@@ -293,6 +310,7 @@ inline void CollectPotentiallyVisibleEntities(CUtlVector< CBaseEntity* >* potent
 	// i will iterate through buildings eventually
 	PopulateVisibleVector populate(potentiallyVisible);
 	ForEachPlayer(populate);
+	ForEachBuildable(populate);
 }
 
 #endif

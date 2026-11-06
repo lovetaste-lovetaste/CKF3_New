@@ -640,7 +640,7 @@ void CViewport::CreateDefaultPanels(void)
 	m_pTeamMenu = (CTFTeamMenu *)AddNewPanel(new CTFTeamMenu);
 	//m_pClassMenu_TER = (CCSClassMenu_TER *)AddNewPanel(new CCSClassMenu_TER);
 	//m_pClassMenu_CT = (CCSClassMenu_CT *)AddNewPanel(new CCSClassMenu_CT);
-	m_pClassMenu = (CTFClassMenu *)AddNewPanel(new CTFClassMenu);
+	m_pClassMenu = (CTFClassMenu*)AddNewPanel(new CTFClassMenu);
 	m_pTextWindow = (CTFTextWindow *)AddNewPanel(new CTFTextWindow);
 	m_pScoreBoard = (CTFScoreBoardDialog *)AddNewPanel(new CTFScoreBoardDialog);
 	m_pSpectatorGUI = (CCSSpectatorGUI *)AddNewPanel(new CCSSpectatorGUI);

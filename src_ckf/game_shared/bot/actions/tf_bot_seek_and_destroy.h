@@ -9,7 +9,9 @@ public:
 	CTFBotSeekAndDestroy(float timer = -1.0f)
 	{
 		m_giveupTimer.Invalidate(); // just in case
-		m_giveupTimer.Start(timer);
+
+		if(timer && timer > 0.0f)
+			m_giveupTimer.Start(timer);
 	};
 
 	virtual void OnEnter(CBot* me);		// when getting changed/suspended into, OR when the initial action
@@ -18,6 +20,10 @@ public:
 	virtual void OnResume(CBot* me);	// action that was suspended into is now finished, so this action is now the active one
 	virtual const char* GetName() const { return "SeekAndDestroy"; }
 	virtual bool ShouldHurry(CBot* me)
+	{
+		return false;
+	}
+	virtual bool ShouldRetreat(CBot* me)
 	{
 		return false;
 	}

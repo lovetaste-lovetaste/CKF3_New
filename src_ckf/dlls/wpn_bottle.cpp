@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 #include "weapons.h"
+#include "bot/hl_bot_manager.h"
 
 #define	KNIFE_BODYHIT_VOLUME 128
 #define	KNIFE_WALLHIT_VOLUME 512
@@ -30,7 +31,7 @@ void CBottle::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_BOTTLE;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 6;
 	m_iClip = WEAPON_NOCLIP;
 	m_bBroken = FALSE;
@@ -80,7 +81,7 @@ BOOL CBottle::Deploy(void)
 {
 	m_iShotsFired = 0;
 
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_bottle.mdl"), "models/CKF_III/wp_group_rf.mdl", (m_bBroken) ? BOTTLE_DRAW_BROKEN : BOTTLE_DRAW, 0, 0, "knife", (m_bBroken) ? 21 : 18);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_bottle.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), (m_bBroken) ? BOTTLE_DRAW_BROKEN : BOTTLE_DRAW, 0, 0, "knife", (m_bBroken) ? 21 : 18);
 }
 
 void CBottle::Holster(int skiplocal)
@@ -99,6 +100,8 @@ void CBottle::PrimaryAttack(void)
 
 	m_pPlayer->SetAnimation(PLAYER_ATTACK1);
 	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + GetFiringRate();
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CBottle::SecondaryAttack(void)
@@ -116,7 +119,7 @@ void CBottle::Swing(void)
 {
 	UTIL_MakeVectors(m_pPlayer->pev->v_angle);
 	Vector vecSrc = m_pPlayer->GetGunPosition();
-	Vector vecEnd = vecSrc + gpGlobals->v_forward * 48;
+	Vector vecEnd = vecSrc + gpGlobals->v_forward * GetMaxRange();
 
 	TraceResult tr;
 	UTIL_TraceLine(vecSrc, vecEnd, dont_ignore_monsters, ENT(m_pPlayer->pev), &tr);

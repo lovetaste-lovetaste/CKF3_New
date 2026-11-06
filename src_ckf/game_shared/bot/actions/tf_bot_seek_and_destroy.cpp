@@ -12,14 +12,18 @@
 #include "bot/hl_bot.h"
 #include "bot/actions/tf_bot_seek_and_destroy.h"
 
-inline int FNullEnt(CBaseEntity* ent) { return ( (!ent) || FNullEnt(ent->edict()) ); }
-
 void CTFBotSeekAndDestroy::OnEnter(CBot* me)
 {
 }
 
 void CTFBotSeekAndDestroy::Update(CBot* me)
 {
+	if (m_giveupTimer.HasStarted() && m_giveupTimer.IsElapsed())
+	{
+		Done("Finished with give up timer");
+		return;
+	}
+
 	CBaseEntity* enemy = me->GetEnemy();
 
 	if(me->HasEnemy() && enemy)
@@ -38,38 +42,49 @@ void CTFBotSeekAndDestroy::Update(CBot* me)
 		}
 		else
 		{
-			// if, for some reason, theres no spawn rooms, then just go to their spawn points
-			CBaseEntity* pSpot;
+			// if, for some reason, theres no spawn rooms, then just go to the nearest enemy directly
 
-			if (me->m_iTeam == TEAM_RED)
+			CClosestTFPlayer closest(me, me->GetEnemyTeam());
+			ForEachPlayer(closest);
+
+			if (closest.m_closePlayer)
 			{
-				// info_player_start is for blu spawners
-			
-				pSpot = UTIL_FindEntityByClassname(NULL, "info_player_start");
-
-				if (!FNullEnt(pSpot))
-				{
-					CNavArea* area = TheNavAreaGrid.GetNearestNavArea(&pSpot->Center(), false);
-					if (area)
-					{
-						Vector close = area->GetRandomPoint();
-						me->SetPathToGoal(close);
-					}
-				}
+				me->SetPathToGoal(closest.m_closePlayer);
 			}
 			else
 			{
-				// info_player_deathmatch is for red spawners
+				CBaseEntity* pSpot;
 
-				pSpot = UTIL_FindEntityByClassname(NULL, "info_player_deathmatch");
-
-				if (!FNullEnt(pSpot))
+				if (me->m_iTeam == TEAM_RED)
 				{
-					CNavArea* area = TheNavAreaGrid.GetNearestNavArea(&pSpot->Center(), false);
-					if (area)
+					// info_player_start is for blu spawners
+
+					pSpot = UTIL_FindEntityByClassname(NULL, "info_player_start");
+
+					if (!FNullEnt(pSpot))
 					{
-						Vector close = area->GetRandomPoint();
-						me->SetPathToGoal(close);
+						CNavArea* area = TheNavAreaGrid.GetNearestNavArea(&pSpot->Center(), false);
+						if (area)
+						{
+							Vector close = area->GetRandomPoint();
+							me->SetPathToGoal(close);
+						}
+					}
+				}
+				else
+				{
+					// info_player_deathmatch is for red spawners
+
+					pSpot = UTIL_FindEntityByClassname(NULL, "info_player_deathmatch");
+
+					if (!FNullEnt(pSpot))
+					{
+						CNavArea* area = TheNavAreaGrid.GetNearestNavArea(&pSpot->Center(), false);
+						if (area)
+						{
+							Vector close = area->GetRandomPoint();
+							me->SetPathToGoal(close);
+						}
 					}
 				}
 			}

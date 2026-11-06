@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 #include "weapons.h"
+#include "bot/hl_bot_manager.h"
 
 #define CHAN_WEAPON	1
 
@@ -34,7 +35,7 @@ void CFlamethrower::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_FLAMETHROWER;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 23;
 
 	m_iDefaultAmmo = FLAME_DEFAULT_GIVE;
@@ -56,6 +57,8 @@ void CFlamethrower::Precache(void)
 	m_flBaseFiringRate = 0.04;
 	m_flBaseDamage = 6.2;
 	m_flBaseReloadRate = -1.0f;
+	m_flBaseMaxRange = -1.0f;
+	m_iBaseExtraShots = -1;
 }
 
 int CFlamethrower::GetItemInfo(ItemInfo *p)
@@ -80,7 +83,7 @@ BOOL CFlamethrower::Deploy(void)
 	m_iAmmoConsumption = 0;
 	m_iState = STATE_FLAMETHROWER_IDLE;
 
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_flamethrower.mdl"), "models/CKF_III/wp_group_rf.mdl", FLAMETHROWER_DRAW, 0, 0, "shotgun", 66);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_flamethrower.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), FLAMETHROWER_DRAW, 0, 0, "shotgun", 66);
 }
 
 void CFlamethrower::Holster(int skiplocal)
@@ -176,6 +179,8 @@ void CFlamethrower::FlamethrowerFire(void)
 		m_flState = UTIL_WeaponTimeBase() + 3.5;
 		PLAYBACK_EVENT_FULL(0, m_pPlayer->edict(), m_usFireScript, 0, (float *)&g_vecZero, (float *)&g_vecZero, 0, 0, m_iState, 0, 0, 0);
 	}
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CFlamethrower::FlamethrowerAirblast(void)

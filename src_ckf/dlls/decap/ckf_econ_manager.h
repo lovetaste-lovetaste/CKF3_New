@@ -79,12 +79,17 @@ enum
 {
     ATK_NULL = 0,   // DO NOT USE THIS
 
+    NO_RANDOM_CRITS, // TODO
+
     //--------------------------/
     // attributes that usually change base stats in the weapon itself
     ATK_CLIP,
     ATK_DAMAGE,
     ATK_FIRE_RATE,
     ATK_RELOAD_RATE,
+    ATK_VELOCITY,   // projectiles
+    ATK_RANGE,      // melee weapons
+    ATK_SHOT_AMOUNT,// multi-shot weapons ( shotguns, minigun, etc ). this is the EXTRA AMOUNT. the weapons shoot one extra!!!!
     //--------------------------/
 
 
@@ -96,6 +101,7 @@ enum
     KILL_CRITS,
     KILL_HEAL,
     KILL_DISGUISE,
+    KILL_NO_SCREAM, // TODO
     KILL_END,   // dont use this
     //--------------------------/
 
@@ -115,6 +121,7 @@ enum
     // basically just a boolean
     HITCOND_START,  // dont use this
     HITCOND_CRIT_BURNING,
+    HITCOND_CRIT_MINICRIT,  // TODO
     HITCOND_END,    // dont use this
 
     //--------------------------/

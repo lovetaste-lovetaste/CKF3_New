@@ -12,7 +12,7 @@
 #include "hl_bot_action_interface.h"
 
 CTFBotActionInterface::CTFBotActionInterface(CTFAction* m_baseAction)
-	: m_scenarioMoniterInterface()
+	: m_scenarioMoniterInterface(), m_fightManager()
 {
 	m_bAction = m_baseAction;
 	m_bot = NULL;
@@ -20,6 +20,8 @@ CTFBotActionInterface::CTFBotActionInterface(CTFAction* m_baseAction)
 	m_isDebug = false;
 	m_flLastDebugUpdate = 0.0f;
 	m_scenarioMoniterInterface.SetBot(NULL);
+	m_fightManager.SetBot(NULL);
+	m_bFighting = false;
 }
 
 void CTFBotActionInterface::Update(void)
@@ -27,6 +29,8 @@ void CTFBotActionInterface::Update(void)
 	CBot* bot = GetBot();
 	if (!bot || !m_bAction)
 		return;
+
+	m_bFighting = false;
 
 	debug_info[0] = '\0';
 	bool resumed = false;
@@ -118,23 +122,44 @@ void CTFBotActionInterface::Update(void)
 			break;
 		}
 
-		int check = m_scenarioMoniterInterface.Check();
+		int check = m_scenarioMoniterInterface.Check(action);
+		bool hurry = action->ShouldHurry(bot);
 
-		if ( (!action->ShouldHurry(bot) && check) || g_pGameRules->m_iRoundStatus == ROUND_END)
-			m_scenarioMoniterInterface.Update(check);
-		else
+		if (g_pGameRules->m_iRoundStatus == ROUND_END)
+			m_scenarioMoniterInterface.Update(0);
+		else if (!hurry)
 		{
-			action->Update(bot);
-			if (m_isDebug)
+			bool done = false;
+			if (check)
 			{
-				// SendDebugInfo(action->GetName());
-				// this doesnt wanna work right so just ignore
-				// this WOULD make a particle with the name of the action, like how nextbots show the debug text
-				// i could not figure it out so whatever
-				CONSOLE_ECHO(action->GetName());
+				m_scenarioMoniterInterface.Update(check);
+				done = true;
+				if (m_isDebug)
+					CONSOLE_ECHO("Doing scenario \n");
 			}
+			else if(bot->HasEnemy())
+			{
+				// the fight manager is handled in the bot's upkeep() func
+				m_bFighting = true;
+				done = true;
+				if (m_isDebug)
+					CONSOLE_ECHO("Fighting enemy \n");
+			}
+
+			if (done)
+				return;
 		}
-		
+
+		action->Update(bot);
+		if (m_isDebug)
+		{
+			// SendDebugInfo(action->GetName());
+			// this doesnt wanna work right so just ignore
+			// this WOULD make a particle with the name of the action, like how nextbots show the debug text
+			// i could not figure it out so whatever
+			CONSOLE_ECHO("%s || %s \n", action->GetName(), debug_info && debug_info[0] ? debug_info : "");
+		}
+
 		return;		// only one action runs per tick
 	}
 }
@@ -208,13 +233,13 @@ void CTFBotScenarioMoniterInterface::Update(int attrib)
 		if (g_pGameRules->m_iRoundWinStatus != m_bot->m_iTeam && m_loseAction)
 		{
 			m_loseAction->Update(m_bot);
-			return;
 		}
 		else if(m_winAction)
 		{
 			m_winAction->Update(m_bot);
-			return;
 		}
+
+		return;
 	}
 
 	if (attrib & RESULT_RETREAT && m_retreatAction)
@@ -225,7 +250,7 @@ void CTFBotScenarioMoniterInterface::Update(int attrib)
 		m_ammoAction->Update(m_bot);
 }
 
-int CTFBotScenarioMoniterInterface::Check()	// TODO: add option to ignore certain checks
+int CTFBotScenarioMoniterInterface::Check(CTFAction* action)	// TODO: add option to ignore certain checks
 {
 	// dual purpose function
 	// you can use the results to determine other stuff
@@ -236,12 +261,29 @@ int CTFBotScenarioMoniterInterface::Check()	// TODO: add option to ignore certai
 
 	int attributes = 0;
 
-	const float lowhealthmulti = 0.4f;
+	const float lowhealthmulti = 0.6f;
 	if (m_bot->pev->health < (m_bot->pev->max_health * lowhealthmulti))
-		attributes = (attributes | RESULT_HEALTH);
+	{
+		CBaseEntity* pEnt = NULL;
+		while ((pEnt = UTIL_FindEntityByClassname(pEnt, "item_healthbox")) != NULL)
+		{
+			if (!(pEnt->pev->flags & FL_ONGROUND))
+				continue;
+			if (pEnt->pev->solid != SOLID_TRIGGER || (pEnt->pev->effects & EF_NODRAW))
+				continue;
 
-	const float superlowhealthmulti = 0.5f;
-	if (m_bot->pev->health < (m_bot->pev->max_health * superlowhealthmulti))
+			// we found a good one!
+
+			attributes = (attributes | RESULT_HEALTH);
+			break;
+		}
+
+		if (FNullEnt(pEnt)) // this should only happen if there is absolutely NO item_healthboxes
+			attributes = (attributes | RESULT_RETREAT);
+	}
+
+	const float superlowhealthmulti = 0.3f;
+	if ((action && action->ShouldRetreat(m_bot)) || m_bot->pev->health < (m_bot->pev->max_health * superlowhealthmulti) )
 		attributes = (attributes | RESULT_RETREAT);
 
 	CBasePlayerWeapon* pWeapon = (CBasePlayerWeapon*)m_bot->m_pActiveItem;
@@ -250,7 +292,7 @@ int CTFBotScenarioMoniterInterface::Check()	// TODO: add option to ignore certai
 	if (m_bot->m_iClass == CLASS_ENGINEER && m_bot->m_iMetal < 200)
 		engieGetMetal = true;
 
-	if ( (pWeapon && m_bot->m_rgAmmo[pWeapon->m_iPrimaryAmmoType] <= 0) || engieGetMetal )
+	if ( (pWeapon && pWeapon->m_iPrimaryAmmoType > 0 && m_bot->m_rgAmmo[pWeapon->m_iPrimaryAmmoType] <= 0) || engieGetMetal )
 		attributes = (attributes | RESULT_AMMO);
 
 	return attributes;

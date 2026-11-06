@@ -4,6 +4,7 @@
 #include "player.h"
 #include "weapons.h"
 #include "gamerules.h"
+#include "bot/hl_bot_manager.h"
 
 enum medigun_e
 {
@@ -24,7 +25,7 @@ void CMedigun::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_MEDIGUN;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 10;
 
 	m_iDefaultAmmo = -1;
@@ -49,8 +50,11 @@ void CMedigun::Precache(void)
 
 	m_usFireScript = PRECACHE_EVENT(1, "events/ckf_medigun.sc");
 
-	m_flBaseFiringRate = 0.1;
+	m_flBaseFiringRate = -1.0;
 	m_flBaseReloadRate = -1.0f;
+	m_flBaseMaxRange = -1.0f;
+	m_flBaseDamage = 0.0f;
+	m_iBaseExtraShots = -1;
 }
 
 int CMedigun::GetItemInfo(ItemInfo *p)
@@ -71,7 +75,7 @@ int CMedigun::GetItemInfo(ItemInfo *p)
 
 BOOL CMedigun::Deploy(void)
 {
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_medigun.mdl"), "models/CKF_III/wp_group_rf.mdl", MEDIGUN_DRAW, 0, 0, "shotgun", 30);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_medigun.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), MEDIGUN_DRAW, 0, 0, "shotgun", 30);
 }
 
 void CMedigun::Holster(int skiplocal)
@@ -81,7 +85,7 @@ void CMedigun::Holster(int skiplocal)
 
 void CMedigun::PrimaryAttack(void)
 {
-	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + GetFiringRate();
+	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.1;
 
 	CBaseEntity *pEntity = NULL;
 	TraceResult tr;
@@ -117,6 +121,8 @@ void CMedigun::PrimaryAttack(void)
 		PLAYBACK_EVENT_FULL(FEV_NOTHOST, m_pPlayer->edict(), m_usFireScript, 0, (float *)&g_vecZero, (float *)&g_vecZero, 0.0f, 0.0f, 0, 0, FALSE, FALSE);
 		m_bDelayedFire = TRUE;
 	}
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CMedigun::SecondaryAttack(void)
@@ -135,6 +141,7 @@ void CMedigun::SecondaryAttack(void)
 
 	SendWeaponAnim(MEDIGUN_UBER);
 	EMIT_SOUND(ENT(pev), CHAN_STATIC, "CKF_III/invulnerable_on.wav", 1.0, ATTN_NORM);
+	SEND_EVENT(EVENT_WEAPON_FIRED_SECONDARY, this, m_pPlayer);
 }
 
 void CMedigun::MedigunHeal(void)

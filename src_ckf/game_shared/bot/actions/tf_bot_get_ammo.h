@@ -15,6 +15,10 @@ public:
 	{
 		return false;
 	}
+	virtual bool ShouldRetreat(CBot* me)
+	{
+		return false;
+	}
 };
 
 #endif

@@ -10,8 +10,6 @@
 #include "bot/hl_bot.h"
 #include "bot/actions/tf_bot_get_ammo.h"
 
-inline int FNullEnt(CBaseEntity* ent) { return ((!ent) || FNullEnt(ent->edict())); }
-
 void CTFBotGetAmmo::OnEnter(CBot* me)
 {
 }

@@ -15,9 +15,12 @@ public:
 	{
 		return false;
 	}
+	virtual bool ShouldRetreat(CBot* me)
+	{
+		return false;
+	}
 
 	bool CanPlaceOnArea(CBot* me, CNavArea* area);
-	CControlPoint* GetClosestControlPoint(CBot* me);
 };
 
 #endif

@@ -4,6 +4,7 @@
 #include "player.h"
 #include "weapons.h"
 #include "buildable.h"
+#include "bot/hl_bot_manager.h"
 
 #define CHAN_WEAPON	1
 
@@ -28,7 +29,7 @@ void CGrenadeLauncher::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_GRENADELAUNCHER;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_2bone.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_2bone.mdl"));
 	pev->sequence = 0;
 	m_iDefaultAmmo = GRENADE_DEFAULT_GIVE;
 	FallInit();
@@ -45,6 +46,8 @@ void CGrenadeLauncher::Precache(void)
 	m_flBaseFiringRate = 0.6;
 	m_flBaseDamage = 120.0;
 	m_flBaseReloadRate = 0.6;
+	m_flBaseMaxRange = -1.0f;
+	m_iBaseExtraShots = -1;
 }
 
 int CGrenadeLauncher::GetItemInfo(ItemInfo *p)
@@ -67,7 +70,7 @@ int CGrenadeLauncher::GetItemInfo(ItemInfo *p)
 BOOL CGrenadeLauncher::Deploy(void)
 {
 	m_fInSpecialReload = 0;
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_grenadelauncher.mdl"), "models/CKF_III/wp_group_2bone.mdl", GRENADELAUNCHER_DRAW, 0, 0, "shotgun", 0);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_grenadelauncher.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_2bone.mdl"), GRENADELAUNCHER_DRAW, 0, 0, "shotgun", 0);
 }
 
 void CGrenadeLauncher::PrimaryAttack(void)
@@ -137,6 +140,8 @@ void CGrenadeLauncher::GrenadeLauncherFire()
 
 	m_pPlayer->SetAnimation(PLAYER_ATTACK1);
 	SendWeaponAnim(GRENADELAUNCHER_SHOOT, UseDecrement() != FALSE);
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CGrenadeLauncher::Reload(void)

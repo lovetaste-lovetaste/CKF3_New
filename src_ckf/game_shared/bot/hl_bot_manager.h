@@ -6,6 +6,7 @@
 #include "nav.h"
 #include "nav_node.h"
 #include "nav_area.h"	// NavEditCmdType
+#include "GameEvent.h"
 
 class CBasePlayer;
 
@@ -25,6 +26,7 @@ public:
 
 	void ServerCommand( const char *pcmd );		// handle the "bot_*" server commands
 	void AddServerCommands( void );
+	void OnEvent(GameEventType event, CBaseEntity* entity, CBaseEntity* other = NULL);
 
 	bool IsNavMeshLoaded( void ) const			{ return m_navLoaded; }
 	bool IsNavMeshGenerating(void) const { return m_isGenerating; };
@@ -64,6 +66,13 @@ private:
 };
 
 extern CHLBotManager *TheHLBots;
+
+#define SEND_EVENT(event, entity, other) \
+    do { \
+        if (TheHLBots) { \
+            TheHLBots->OnEvent((event), (entity), (other)); \
+        } \
+    } while (0)
 
 // for game.cpp
 void Bot_RegisterCvars( void );

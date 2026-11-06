@@ -11,6 +11,7 @@
 #include "bot/hl_bot.h"
 #include "bot/actions/tf_bot_engineer.h"
 #include "bot/actions/tf_bot_seek_and_destroy.h"
+#include "bot/actions/tf_bot_control_point_defend.h"
 
 enum EngieBuildStatusAttrib
 {
@@ -80,6 +81,13 @@ void CTFBotEngineerAction::Update(CBot* me)
 	if (!me)
 		return;
 
+	if (me->HasEnemy())
+	{
+		me->SwitchSlotWeapon(WEAPON_SLOT_PRIMARY);
+		Suspend_For(new CTFBotSeekAndDestroy(RANDOM_FLOAT(3.0f, 12.0f)), "There is an enemy!");
+		return;
+	}
+
 	int attrib = GetBuildingAttributes(me);
 	
 	if (attrib & NO_TELEPORTER_ENTRANCE)
@@ -115,7 +123,7 @@ void CTFBotEngineerAction::Update(CBot* me)
 	{
 		if (g_pGameRules->CPExist())
 		{
-			CControlPoint* cp = GetClosestControlPoint(me);
+			CControlPoint* cp = g_pGameRules->GetNextControlPointToDefend(me->m_iTeam);
 			if (cp)
 			{
 				CNavArea* area = TheNavAreaGrid.GetNearestNavAreaAttributes(&cp->Center(), true, 0, (NAV_NO_BUILD_ZONE | NAV_NO_TELE_EXIT));
@@ -234,7 +242,7 @@ void CTFBotEngineerAction::Update(CBot* me)
 	{
 		if (g_pGameRules->CPExist())
 		{
-			CControlPoint* cp = GetClosestControlPoint(me);
+			CControlPoint* cp = g_pGameRules->GetNextControlPointToDefend(me->m_iTeam);
 			if (cp)
 			{
 				CNavArea* area = TheNavAreaGrid.GetNearestNavAreaAttributes(&cp->Center(), true, 0, (NAV_NO_BUILD_ZONE | NAV_NO_SENTRY));
@@ -268,7 +276,7 @@ void CTFBotEngineerAction::Update(CBot* me)
 
 	// this will have healing shit here once i redo the aiming system
 	// for now, just look for kills
-	Suspend_For(new CTFBotSeekAndDestroy(RANDOM_FLOAT(10.0f, 30.0f)), "Bored. Looking for kills!");
+	Suspend_For(new CTFBotSeekAndDestroy(RANDOM_FLOAT(5.0f, 30.0f)), "Bored. Looking for kills!");
 	return;
 
 	//Continue();
@@ -299,44 +307,4 @@ void CTFBotEngineerAction::OnExit(CBot* me)
 
 void CTFBotEngineerAction::OnResume(CBot* me)
 {
-}
-
-CControlPoint* CTFBotEngineerAction::GetClosestControlPoint(CBot* me)
-{
-	CControlPoint* pBest = NULL;
-	float bestDist = -1.0f;
-
-	// ALERT(at_console, "CP count: %d\n", g_pGameRules->m_ControlPoints.Count());
-	for (int i = 0; i < g_pGameRules->m_ControlPoints.Count(); ++i)
-	{
-		//if (!g_pGameRules->m_ControlPoints.IsValidIndex(i))
-			//break;
-
-		CControlPoint* pPoint = (CControlPoint*)CBaseEntity::Instance(g_pGameRules->m_ControlPoints.Element(i));
-
-		if (!pPoint)
-			continue;
-
-		if (pPoint->m_bLocked || pPoint->m_bDisabled)
-			continue;
-
-		if (pPoint->pev->team != me->m_iTeam && pPoint->pev->team != TEAM_UNASSIGNED)
-			continue;
-		// we do not own this point, so we cant defend it
-
-		if (me->m_iTeam == TEAM_RED && !pPoint->m_bCanBluCap)
-			continue;
-		if (me->m_iTeam == TEAM_BLU && !pPoint->m_bCanRedCap)
-			continue;
-		// if the enemy cannot capture this point, then we dont need to defend it
-
-		float dist = (pPoint->pev->origin - me->pev->origin).LengthSquared();
-		if (dist < bestDist || bestDist == -1.0f)
-		{
-			bestDist = dist;
-			pBest = pPoint;
-		}
-	}
-
-	return pBest;
 }

@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 #include "weapons.h"
+#include "bot/hl_bot_manager.h"
 
 enum stickylauncher_e
 {
@@ -25,7 +26,7 @@ void CStickyLauncher::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_STICKYLAUNCHER;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 6;
 	m_iDefaultAmmo = STICKY_DEFAULT_GIVE;
 	m_iMaxDeploy = 8;
@@ -48,6 +49,8 @@ void CStickyLauncher::Precache(void)
 	m_flBaseFiringRate = 0.6;
 	m_flBaseDamage = 120.0;
 	m_flBaseReloadRate = 0.67;
+	m_flBaseMaxRange = -1.0f;
+	m_iBaseExtraShots = -1;
 }
 
 int CStickyLauncher::GetItemInfo(ItemInfo *p)
@@ -71,7 +74,7 @@ BOOL CStickyLauncher::Deploy(void)
 {
 	m_fInSpecialReload = 0;
 
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_stickylauncher.mdl"), "models/CKF_III/wp_group_rf.mdl", STICKYLAUNCHER_DRAW, 0, 0, "onehanded", 24);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_stickylauncher.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), STICKYLAUNCHER_DRAW, 0, 0, "onehanded", 24);
 }
 
 void CStickyLauncher::Holster(int skiplocal)
@@ -277,6 +280,8 @@ void CStickyLauncher::StickyLauncherFire(void)
 
 	m_pPlayer->SetAnimation(PLAYER_ATTACK1);
 	SendWeaponAnim(STICKYLAUNCHER_SHOOT, UseDecrement() != FALSE);
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CStickyLauncher::Reload(void)

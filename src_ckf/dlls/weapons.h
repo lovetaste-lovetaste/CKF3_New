@@ -393,16 +393,24 @@ public:
 	float m_flBaseFiringRate;
 	float m_flBaseSmackTime;
 	float m_flBaseReloadRate;
+	float m_flBaseVelocity;
+	float m_flBaseMaxRange;
+	int	m_iBaseExtraShots;
 	float GetMaxClip() { return TheEconManager->GetAttributeValue(this, ATK_CLIP, iMaxClip()); }
 	float GetDamage() { return TheEconManager->GetAttributeValue(this, ATK_DAMAGE, m_flBaseDamage); }
 	float GetFiringRate() { return TheEconManager->GetAttributeValue(this, ATK_FIRE_RATE, m_flBaseFiringRate); }
 	float GetReloadRate() { return TheEconManager->GetAttributeValue(this, ATK_RELOAD_RATE, m_flBaseReloadRate); }
+	float GetVelocity() { return TheEconManager->GetAttributeValue(this, ATK_VELOCITY, m_flBaseVelocity); }
+	float GetMaxRange() { return TheEconManager->GetAttributeValue(this, ATK_RANGE, m_flBaseMaxRange); }
+	int GetExtraShots() { return TheEconManager->GetAttributeInt(this, ATK_SHOT_AMOUNT, m_iBaseExtraShots); };
 	void SetupMeleeValues()
 	{
 		m_flBaseDamage = 65.0;
 		m_flBaseSmackTime = 0.2;
 		m_flBaseFiringRate = m_flBaseSmackTime + 0.6;
 		m_flBaseReloadRate = -1.0f;
+		m_flBaseMaxRange = 48.0;
+		m_iBaseExtraShots = -1;
 	}
 };
 
@@ -1094,6 +1102,8 @@ public:
 	void PrimaryAttack(void);
 	void SecondaryAttack(void);
 	void WeaponIdle(void);
+
+	float m_flBuildingDamage;
 
 	BOOL UseDecrement(void)
 	{

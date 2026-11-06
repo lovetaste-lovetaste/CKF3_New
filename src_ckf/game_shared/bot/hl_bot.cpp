@@ -9,6 +9,7 @@
 #include "extdll.h"
 #include "util.h"
 #include "cbase.h"
+#include "game.h"
 #include "player.h"
 #include "weapons.h"
 #include "gamerules.h"
@@ -16,11 +17,13 @@
 #include "hl_bot.h"
 #include "hl_bot_manager.h"
 #include "hl_bot_locomotion.h"
+#include "hl_bot_aim_interface.h"
 
 #include "bot/actions/tf_bot_idle.h"
 #include "bot/actions/tf_bot_seek_and_destroy.h"
 #include "bot/actions/tf_bot_control_point_attack.h"
 #include "bot/actions/tf_bot_control_point_defend.h"
+#include "bot/actions/tf_bot_control_point_moniter.h"
 #include "bot/actions/tf_bot_get_health.h"
 #include "bot/actions/tf_bot_get_ammo.h"
 #include "bot/actions/tf_bot_retreat.h"
@@ -32,17 +35,18 @@
 #define BOT_NAME_COUNT (sizeof(g_BotNames) / sizeof(g_BotNames[0])) // just in case the name list changes
 
 extern cvar_t cv_bot_debug;
+extern cvar_t* g_psv_gravity;
 
 static const float BotCommandInterval = 1.0f / 30.0f;
 static const float BotFullThinkInterval = BotCommandInterval * 10.0f; // for every 10 commands, one full think is applied
 // just ten ticks though so its fine
 
 CBot::CBot()
-	: m_actionInterface(new CTFBotIdle)
+	: m_actionInterface(new CTFBotIdle), m_aimInterface(this)
 {
 	// init for da bots
 	
-	m_flNextBotThink = m_flNextFullBotThink = m_flPreviousCommandTime = m_forwardSpeed = m_strafeSpeed = m_verticalSpeed = 0.0f;
+	m_flNextBotThink = m_flNextFullBotThink = m_flPreviousCommandTime = m_forwardSpeed = m_strafeSpeed = m_verticalSpeed = m_flLastWeaponHeard = 0.0f;
 	m_buttonFlags = 0;
 
 	m_path.Invalidate();
@@ -58,14 +62,17 @@ CBot::CBot()
 	m_actionInterface.m_scenarioMoniterInterface.SetRetreatAction( new CTFBotRetreat );
 	m_actionInterface.m_scenarioMoniterInterface.SetAmmoAction( new CTFBotGetAmmo );
 	m_actionInterface.m_scenarioMoniterInterface.SetWinLostActions(new CTFBotSeekAndDestroy, new CTFBotRetreat);
+	m_actionInterface.m_fightManager.SetBot(this);
 }
-
+//void SelectDesiredWeapon()
 CTFAction* CBot::DesiredAction(int forceclass)
 {
-	if (m_iClass == CLASS_MEDIC)
+	int iClass = (forceclass && forceclass <= CLASS_SPY && forceclass >= CLASS_SCOUT) ? forceclass : m_iClass;
+
+	if (iClass == CLASS_MEDIC)
 		return new CTFBotMedicHeal;
 
-	if (m_iClass == CLASS_ENGINEER)
+	if (iClass == CLASS_ENGINEER)
 		return new CTFBotEngineerAction;
 
 	if (g_pGameRules->CPExist())
@@ -79,10 +86,10 @@ CTFAction* CBot::DesiredAction(int forceclass)
 	//	}
 		// doesnt matter
 
-		if (m_iClass != CLASS_ENGINEER)
-			return new CTFBotControlPointAttack;
-		else
-			return new CTFBotControlPointDefend;
+	//	if (m_iClass != CLASS_ENGINEER)
+	//		return new CTFBotControlPointAttack;
+	//	else
+			return new CTFBotControlPointMoniter; // handles both attacking and defending
 	}
 
 	return new CTFBotSeekAndDestroy;
@@ -107,6 +114,23 @@ int CBot::ChooseGoodClass(void)
 		CLASS_SPY,
 	};
 
+	static int deathmatchRoster[] =
+	{
+		CLASS_SOLDIER,
+		CLASS_SCOUT,
+		CLASS_DEMOMAN,
+		CLASS_SCOUT,
+		CLASS_SOLDIER,
+		CLASS_SNIPER,
+
+		CLASS_PYRO,
+		CLASS_SOLDIER,
+		CLASS_ENGINEER,
+		CLASS_MEDIC,
+		CLASS_SPY,
+		CLASS_HEAVY,
+	};
+
 	/*
 	static int defenseRoster[] =
 	{
@@ -128,6 +152,12 @@ int CBot::ChooseGoodClass(void)
 	not needed
 	*/
 
+	// assume offense
+	int* desiredRoster = offenseRoster;
+
+	if (!g_pGameRules->CPExist())
+		desiredRoster = deathmatchRoster;
+
 	// count classes in use by my team, not including me
 	CCountClassMembers currentRoster(this, m_iTeam);
 	ForEachPlayer(currentRoster);
@@ -135,14 +165,14 @@ int CBot::ChooseGoodClass(void)
 	int classCount[9] = { 0,0,0,0,0,0,0,0,0 };
 	for (int i = 0; i < 12; ++i)
 	{
-		if (currentRoster.m_count[offenseRoster[i]] > classCount[offenseRoster[i]])
+		if (currentRoster.m_count[desiredRoster[i]] > classCount[desiredRoster[i]])
 		{
 			// if we have enough of this class, skip it
-			classCount[offenseRoster[i]]++;
+			classCount[desiredRoster[i]]++;
 		}
 		else
 		{
-			return offenseRoster[i];
+			return desiredRoster[i];
 		}
 	}
 
@@ -165,6 +195,9 @@ void CBot::UpdateKnownEntities(void)
 
 	// update known set with new data
 	{
+		// Mark obsolete entities for removal instead of removing immediately
+		CUtlVector<int> indicesToRemove;
+
 		int i;
 		for (i = 0; i < m_knownEntityVector.Count(); ++i)
 		{
@@ -173,8 +206,7 @@ void CBot::UpdateKnownEntities(void)
 			// clear out obsolete knowledge
 			if (known.GetEntity() == NULL || known.IsObsolete())
 			{
-				m_knownEntityVector.Remove(i);
-				--i;
+				indicesToRemove.AddToTail(i);
 				continue;
 			}
 
@@ -223,6 +255,12 @@ void CBot::UpdateKnownEntities(void)
 				}
 			}
 		}
+
+		// Remove marked entities in reverse order to preserve indices
+		for (int removeIdx = indicesToRemove.Count() - 1; removeIdx >= 0; --removeIdx)
+		{
+			m_knownEntityVector.Remove(indicesToRemove[removeIdx]);
+		}
 	}
 
 	// check for new recognizes that were not in the known set
@@ -262,16 +300,15 @@ const CKnownEntity* CBot::GetPrimaryKnownThreat(bool onlyVisibleThreats)
 	// find the first valid entity
 	for (i = 0; i < m_knownEntityVector.Count(); ++i)
 	{
-		const CKnownEntity& firstThreat = m_knownEntityVector[i];
-		int team = firstThreat.GetTeam();
+		int team = m_knownEntityVector[i].GetTeam();
 		bool enemy = team != -1 && team != m_iTeam;
 
 		// check in case status changes between updates
-		if ( (firstThreat.GetTimeSinceBecameKnown() >= 0.0f) && !firstThreat.IsObsolete() && enemy )
+		if ( (m_knownEntityVector[i].GetTimeSinceBecameKnown() >= 0.0f) && !m_knownEntityVector[i].IsObsolete() && enemy )
 		{
-			if (!onlyVisibleThreats || firstThreat.IsVisibleRecently())
+			if (!onlyVisibleThreats || m_knownEntityVector[i].IsVisibleRecently())
 			{
-				threat = &firstThreat;
+				threat = &m_knownEntityVector[i];
 				break;
 			}
 		}
@@ -285,17 +322,16 @@ const CKnownEntity* CBot::GetPrimaryKnownThreat(bool onlyVisibleThreats)
 
 	for (++i; i < m_knownEntityVector.Count(); ++i)
 	{
-		const CKnownEntity& newThreat = m_knownEntityVector[i];
-		int team = newThreat.GetTeam();
+		int team = m_knownEntityVector[i].GetTeam();
 		bool enemy = team != -1 && team != m_iTeam;
 
 		// check in case status changes between updates
-		if (newThreat.GetTimeSinceBecameKnown() >= 0.0f && !newThreat.IsObsolete() && enemy)
+		if (m_knownEntityVector[i].GetTimeSinceBecameKnown() >= 0.0f && !m_knownEntityVector[i].IsObsolete() && enemy)
 		{
-			if (!onlyVisibleThreats || newThreat.IsVisibleRecently())
+			if (!onlyVisibleThreats || m_knownEntityVector[i].IsVisibleRecently())
 			{
-				if( (newThreat.GetLastKnownPosition() - pev->origin).IsLengthLessThan( (threat->GetLastKnownPosition() - pev->origin).Length() ) )
-					threat = &newThreat;
+				if( (m_knownEntityVector[i].GetLastKnownPosition() - pev->origin).IsLengthLessThan( (threat->GetLastKnownPosition() - pev->origin).Length() ) )
+					threat = &m_knownEntityVector[i];
 				// SelectMoreDangerousThreat has not been implemented yet...
 			}
 		}
@@ -321,11 +357,11 @@ const CKnownEntity* CBot::GetPrimaryKnownTeammate(bool onlyVisibleThreats)
 	for (int i = 0; i < m_knownEntityVector.Count(); ++i)
 	{
 		const CKnownEntity& firstThreat = m_knownEntityVector[i];
-		if (!firstThreat.GetEntity()->IsPlayer())
+		CBaseEntity* ent = firstThreat.GetEntity();
+		if (!ent || !ent->IsPlayer())
 			continue;
-		
-		CBasePlayer* teammate = (CBasePlayer*)firstThreat.GetEntity();
-		
+
+		CBasePlayer* teammate = (CBasePlayer*)ent;
 		if (teammate->m_iHealerCount > 0)
 			continue;
 
@@ -377,7 +413,8 @@ CBot* CBot::CreateBot(const char* name, bool quotaManaged)
 			//sprintf(botName, "Bot%02d", serial++);
 			sprintf(botName, "%s", g_BotNames[RANDOM_LONG(0, BOT_NAME_COUNT - 1)]);
 			// this SHOULD have a indent thingy so that the random is not needed
-			// however, the chance of a random bot getting the same name as another one has is literally 1/7833, so its whatever
+			// however, the chance of a random bot getting the same name as another one has is literally less than 1/7000, so its whatever
+			// plus the while loop will make sure same names dont happen anyway
 		} while (UTIL_IsNameTaken(botName));
 	}
 
@@ -396,10 +433,6 @@ CBot* CBot::CreateBot(const char* name, bool quotaManaged)
 		return NULL;
 	}
 
-	// give the bot a player model
-	//char* infobuffer = GET_USERINFO(pent);
-	//SET_CLIENT_KEY_VALUE(ENTINDEX(pent), infobuffer, "model", "gordon");
-
 	FREE_PRIVATE(pent);
 	CBot* bot = GetClassPtr((CBot*)VARS(pent));
 
@@ -413,33 +446,30 @@ CBot* CBot::CreateBot(const char* name, bool quotaManaged)
 
 void CBot::Spawn(void)
 {
-	//m_iLoadoutEconIndex[CLASS_SP][];
+	// make sure to do econ shit before the Spawn() thingy!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	m_iLoadoutEconIndex[CLASS_SOLDIER][0] = RANDOM_LONG(0, 1) == 1 ? ITEM_ROCKETLAUNCHER : ITEM_BLACKBOX;
+
 
 	// let the game set everything up
 	CBasePlayer::Spawn();
 
-	// make sure everyone knows we are a bot
 	pev->flags |= (FL_CLIENT | FL_FAKECLIENT);
-
-	// bots use their own thinking mechanism (BotThink() from the manager)
 	SetThink(NULL);
 	pev->nextthink = -1;
-
 	m_flNextBotThink = gpGlobals->time + BotCommandInterval;
-	m_flNextFullBotThink = gpGlobals->time + BotFullThinkInterval;
+	m_flNextFullBotThink = gpGlobals->time + RANDOM_FLOAT(0, BotFullThinkInterval);
 	m_flPreviousCommandTime = gpGlobals->time;
-
 	m_path.Invalidate();
 	m_pathGoal = pev->origin;
 	m_repathTimer.Invalidate();
-
 	m_stuckSpot = pev->origin;
 	m_stuckTimer.Start();
-
-	m_hEnemy = NULL;	// no target carries over into a fresh life
-
-	ResetCommand();
+	m_hEnemy = NULL;
+	m_aimInterface.Reset();
 	m_actionInterface.Reset(DesiredAction());
+	ResetCommand();
+	m_knownEntityVector.RemoveAll();
+	m_flLastWeaponHeard = -1.0f;
 }
 
 void CBot::Think(void)
@@ -472,10 +502,10 @@ void CBot::Think(void)
 	}
 	else if(m_hReevaluateClassTimer.IsElapsed())
 	{
-		m_hReevaluateClassTimer.Start(RANDOM_FLOAT(1.0f,5.0f));
+		m_hReevaluateClassTimer.Start(RANDOM_FLOAT(1.0f,3.0f));
 		int new_class = ChooseGoodClass();
 		NavAttributeType spawn = m_iTeam == TEAM_BLUE ? NAV_SPAWN_ROOM_BLUE : NAV_SPAWN_ROOM_RED;
-		if (m_iClass != new_class && m_lastNavArea && ( m_lastNavArea->GetAttributes() & spawn ) )
+		if (m_iClass != new_class && ( (m_lastNavArea && (m_lastNavArea->GetAttributes() & spawn)) || !IsAlive() ) )
 		{
 			HandleMenu_ChooseClass(this, ChooseGoodClass());
 			ResetCommand();
@@ -526,7 +556,7 @@ void CBot::Update(void)
 	if (m_hEnemy)
 	{
 		CBaseEntity* e = m_hEnemy;
-		if (!e || !e->IsAlive())
+		if (!e || FNullEnt(e->pev) || !e->IsAlive())
 			m_hEnemy = NULL;
 
 		// this shouldnt need to happen now that we ported the known entity system
@@ -579,49 +609,58 @@ void CBot::Upkeep(void)
 		PressJump();
 	}
 
-	Vector m_aimPosition = pev->origin;
+	float aimDuration = BotFullThinkInterval;
+	const CKnownEntity* threat = GetPrimaryKnownThreat();
+	CBaseEntity* enemy = threat ? threat->GetEntity() : NULL;
+	bool enemyfound = enemy && HasEnemy();
 
-	const CKnownEntity* teammate = GetPrimaryKnownTeammate();
-	bool teammatefound = teammate && teammate->GetEntity()->IsPlayer();
-
-	bool enemyfound = GetPrimaryKnownThreat() && m_hEnemy->IsPlayer();
-	// this should run the GetPrimaryKnownThreat() before checking the m_hEnemy, so this should be fine to keep here
-	
-	bool teammateHelping = false;
-	if (teammatefound)
+	if (m_iClass == CLASS_MEDIC)
 	{
-		switch (m_iClass)
+		const CKnownEntity* teammate = GetPrimaryKnownTeammate();
+		CBaseEntity* mate = teammate ? teammate->GetEntity() : NULL;
+
+		if (mate && mate->IsPlayer())
 		{
-			case CLASS_MEDIC:
+			CBasePlayerWeapon* pWeapon = (CBasePlayerWeapon*)m_pActiveItem;
+
+			if (!pWeapon)
+				return;
+
+			if (pWeapon->m_iId != WEAPON_MEDIGUN)
+				SwitchSlotWeapon(WEAPON_SLOT_SECONDARY);
+			else
 			{
-				CBasePlayerWeapon* pWeapon = (CBasePlayerWeapon*)m_pActiveItem;
-
-				if (!pWeapon)
-					return;
-
-				if(pWeapon->m_iId != WEAPON_MEDIGUN)
-					SwitchSlotWeapon(WEAPON_SLOT_SECONDARY);
+				if (m_iUbercharge >= 100 && (enemyfound || pev->health < (pev->max_health * 0.5)))
+					PressSecondaryAttack();
 				else
-				{
-					if (m_iUbercharge >= 100 && ( enemyfound || pev->health < (pev->max_health * 0.5) ))
-						PressSecondaryAttack();
-					else
-						PressPrimaryAttack();
-				}
-
-				teammateHelping = true;
-				break;
+					PressPrimaryAttack();
 			}
-		}
 
-		if(teammateHelping)
-			m_aimPosition = teammate->GetLastKnownPosition();
+			if (m_pathfollower.GetImprov()->IsVisible(mate->Center()))
+				m_aimInterface.CreateAimSpot(mate, INTERESTING, aimDuration);
+			else
+				m_aimInterface.CreateAimSpot(teammate->GetLastKnownPosition(), INTERESTING, aimDuration);
+		}
 	}
 	
-	if (enemyfound && !teammateHelping)
+	if (enemyfound)
 	{
-		m_aimPosition = GetPrimaryKnownThreat()->GetLastKnownPosition();
+		LookAtPriorityType aimPriority;
+		Vector m_aimPosition = pev->origin;
 
+		if (m_pathfollower.GetImprov()->IsVisible(enemy->Center()))
+		{
+			aimPriority = CRITICAL;
+			m_aimPosition = enemy->Center();
+		}
+		else
+		{
+			aimPriority = IMPORTANT;
+			m_aimPosition = threat->GetLastKnownPosition();
+		}
+		// this seem impractical
+
+		
 		CBasePlayerWeapon* pWeapon = (CBasePlayerWeapon*)m_pActiveItem;
 
 		if (pWeapon)
@@ -630,7 +669,7 @@ void CBot::Upkeep(void)
 			{
 				case WEAPON_SNIPERIFLE:
 				{
-					Vector head = m_hEnemy->EyePosition();
+					Vector head = enemy->EyePosition();
 					if (m_pathfollower.GetImprov()->IsVisible(head))
 						m_aimPosition = head;
 
@@ -642,7 +681,7 @@ void CBot::Upkeep(void)
 						{
 							PressSecondaryAttack();
 						}
-						else if (pSniperRifle && pSniperRifle->m_fCharge > 10)
+						else if (pSniperRifle && pSniperRifle->m_fCharge > 10 && m_aimInterface.IsSightedIn())
 						{
 							PressPrimaryAttack();
 						}
@@ -655,7 +694,7 @@ void CBot::Upkeep(void)
 
 					if (m_rgAmmo[pMinigun->m_iPrimaryAmmoType] > 0)
 					{
-						if (m_pathfollower.GetImprov()->IsVisible(m_hEnemy->Center()))
+						if (m_pathfollower.GetImprov()->IsVisible(enemy->Center()) && m_aimInterface.IsSightedIn())
 							PressPrimaryAttack();
 						// jakulo: this specifically does NOT use GetLastKnownPosition so that bots dont shoot at targets that they do not see anymore
 						// eg: bot is aware of someone but they just lost sight of them, meaning that the last known position is right before they lost track
@@ -682,17 +721,19 @@ void CBot::Upkeep(void)
 					}
 					// if close enough, then attack
 					// TODO: swing prediction maybe?
+					// TODO: use weapon range
 
 					break;
 				}
 				case WEAPON_BUTTERFLY:
 				{
 					CButterfly* pKnife = (CButterfly*)pWeapon;
-					if (pKnife && pKnife->IsBackFace(pev->angles, m_hEnemy->pev->angles))
+					if (pKnife && (pKnife->IsBackFace(pev->angles, enemy->pev->angles) || ( (pev->origin - m_aimPosition).IsLengthLessThan(48.0f) && enemy->Classify() != CLASS_PLAYER)))
 					{
 						PressPrimaryAttack();
 					}
 					// only swings if the spy can backstab
+					// if the enemy is not a player, then the spy just butterknifes it
 
 					break;
 				}
@@ -707,16 +748,19 @@ void CBot::Upkeep(void)
 							PressSecondaryAttack();
 					}
 					// TODO: this only lets the demo sticky spam. eventually, this should have charging based off the player distance
+					break;
 				}
 				case WEAPON_FLAMETHROWER:
 				{
 					CFlamethrower* pFlamethrower = (CFlamethrower*)pWeapon;
-					if (m_rgAmmo[pFlamethrower->m_iPrimaryAmmoType] > 0 && (pev->origin - m_aimPosition).IsLengthLessThan(1024.0f))
+					if (m_rgAmmo[pFlamethrower->m_iPrimaryAmmoType] > 0 && (pev->origin - m_aimPosition).IsLengthLessThan(1024.0f) && m_aimInterface.HasBeenSightedIn())
 						PressPrimaryAttack();
+
+					break;
 				}
 				default:
 				{
-					if (pWeapon->m_iClip > 0)
+					if (pWeapon->m_iClip > 0 && m_aimInterface.IsSightedIn())
 					{
 						PressPrimaryAttack();
 					}
@@ -724,9 +768,12 @@ void CBot::Upkeep(void)
 				}
 			}
 		}
+
+		m_aimInterface.CreateAimSpot(m_aimPosition, aimPriority, aimDuration);
 	}
+
 	/*
-	else if(HasPath())
+	if(HasPath())
 	{
 		m_pathfollower.FindPathPoint(512.0f, &m_aimPosition, NULL);
 
@@ -735,63 +782,182 @@ void CBot::Upkeep(void)
 	// for some reason this breaks the pathfinding
 	// TODO: fix this shit dawg
 	*/
+
+	const float minMoveSpeed = 1.0f;
+	// below this we count as standing still
+	// super small so that it keeps the vel stuff until we are REALLY still
+	Vector point = pev->origin;
+	Vector eyePos = EyePosition();
+	Vector horizVel = pev->velocity;
+	horizVel.z = 0.0f;
+	Vector lookDir;
+	if (horizVel.Length() > minMoveSpeed)
+	{
+		// face the direction we're travelling
+		// on paths this SHOULD produce a natural look ahead without needing to compute it from the path
+		// this might look weird when the bot stops though, so eventually the path itself should be used
+	}
 	else
 	{
-		const float minMoveSpeed = 1.0f;
-		// below this we count as standing still
-		// super small so that it keeps the vel stuff until we are REALLY still
-
-		Vector point = pev->origin;
-		Vector eyePos = EyePosition();
-		Vector horizVel = pev->velocity;
-		horizVel.z = 0.0f;
-
-		Vector lookDir;
-		if (horizVel.Length() > minMoveSpeed)
-		{
-			// face the direction we're travelling
-			// on paths this SHOULD produce a natural look ahead without needing to compute it from the path
-			// this might look weird something though...
-			lookDir = horizVel.Normalize();
-		}
-		else
-		{
-			// standing still
-			// just face where ur already looking but flat in the horizon
-			float yawRad = pev->v_angle.y * (float)(M_PI / 180.0);
-			lookDir = Vector(cos(yawRad), sin(yawRad), 0.0f);
-		}
-
-		// target point is level with the eyes, so Bot_LookAt computes a pitch of 0
-		point = eyePos + lookDir * 128.0f;
-		point.z = eyePos.z;
-
-		m_aimPosition = point;
+		// standing still
+		// just face where ur already looking but flat in the horizon
+		float yawRad = pev->v_angle.y * (float)(M_PI / 180.0);
+		lookDir = Vector(cos(yawRad), sin(yawRad), 0.0f);
 	}
 
-	Bot_LookAt(this, m_aimPosition);
+	point = eyePos + lookDir * 128.0f;
+	point.z = eyePos.z;
+	m_aimInterface.CreateAimSpot(point, BORING, aimDuration);
 
+	// actions can call m_aimInterface.CreateAimSpot() themselves with a higher priority (IMPORTANT/MANDATORY) to override this
+	m_aimInterface.Update();
 	m_pathfollower.Debug(cv_bot_debug.value == 1.0);
 	m_pathfollower.Update(BotCommandInterval);
+
+	if (m_actionInterface.ShouldWeFight())
+		m_actionInterface.m_fightManager.Update(FIGHT_DUEL);
 }
 
-void CBot::SetPathToGoal(CBasePlayer *goal)
+enum OnEventWeaponSoundPriority
+{
+	SND_SILENT,
+	SND_QUIET,
+	SND_NORMAL,
+	SND_LOUD,
+	SND_VERY_LOUD,
+
+	SND_COUNT
+};
+
+#define WEAPON_HEARING_TIME 1.0f // how long a bot's hearing becomes muffled after hearing a gunshot
+
+void CBot::OnEvent(GameEventType event, CBaseEntity* entity, CBaseEntity* other)
+{
+	if (!event)
+		return;
+
+	switch (event)
+	{
+	case EVENT_WEAPON_FIRED:
+	{
+		if (!other || !other->IsPlayer()) return;
+
+		CBasePlayer* pPlayer = (CBasePlayer*)other;
+
+		int enteam = pPlayer->IsPlayerDisguised() ? pPlayer->m_iDisguiseTeam : pPlayer->m_iTeam;
+		if (enteam == m_iTeam) // nobody cares about TEAMMATES!!!!!!!!!!!!!!!!!!
+			return;
+
+		CBasePlayerWeapon* pWeapon = (CBasePlayerWeapon*)entity;
+		if (!pWeapon)
+			return;
+
+		OnEventWeaponSoundPriority sndwpnpriority = SND_SILENT;
+
+		switch (pWeapon->m_iId)
+		{
+		case WEAPON_BAT:
+		case WEAPON_SHOVEL:
+		case WEAPON_FIREAXE:
+		case WEAPON_BOTTLE:
+		case WEAPON_FIST:
+		case WEAPON_WRENCH:
+		case WEAPON_BONESAW:
+		case WEAPON_KUKRI:
+		case WEAPON_BUTTERFLY:
+		{
+			sndwpnpriority = SND_QUIET;
+			break;
+		}
+		case WEAPON_SNIPERIFLE:
+		case WEAPON_SMG:
+		case WEAPON_REVOLVER:
+		case WEAPON_FLAMETHROWER:
+		case WEAPON_PISTOL:
+		case WEAPON_SYRINGEGUN:
+		{
+			sndwpnpriority = SND_NORMAL;
+			break;
+		}
+		case WEAPON_SCATTERGUN:
+		case WEAPON_SHOTGUN:
+		{
+			sndwpnpriority = SND_LOUD;
+			break;
+		}
+		case WEAPON_STICKYLAUNCHER:
+		case WEAPON_GRENADELAUNCHER:
+		case WEAPON_MINIGUN:
+		case WEAPON_ROCKETLAUNCHER:
+		{
+			sndwpnpriority = SND_VERY_LOUD;
+			break;
+		}
+		default:break;
+		}
+
+		if (sndwpnpriority <= SND_SILENT)
+			return;
+
+		if (m_flLastWeaponHeard + WEAPON_HEARING_TIME > gpGlobals->time)
+			sndwpnpriority = (OnEventWeaponSoundPriority)(sndwpnpriority / 2);
+
+		float distance = (pPlayer->pev->origin - pev->origin).Length();
+
+		if (distance < (sndwpnpriority * 512.0f))
+		{
+			// we heard a weapon!!!
+
+			m_flLastWeaponHeard = gpGlobals->time; // ear is muffled
+			m_aimInterface.CreateAimSpot(pPlayer->GetGunPosition(), INTERESTING, 30.0f);
+		}
+
+		break;
+	}
+	//	case EVENT_PLAYER_FOOTSTEP: this is not worth it as of right now lol. this will probably be readded, but for now just leave this commented
+	case EVENT_PLAYER_VOICELINE:
+	{
+		if (entity && entity->IsPlayer() && FVisible(entity))
+		{
+			CBasePlayer* pPlayer = (CBasePlayer*)entity;
+			int myteam = m_iTeam;
+			int enteam = pPlayer->IsPlayerDisguised() && pPlayer->m_iDisguiseTeam != myteam ? pPlayer->m_iDisguiseTeam : pPlayer->m_iTeam;
+
+			if(enteam != myteam)
+				m_aimInterface.CreateAimSpot(entity->Center(), (entity->Center() - Center()).IsLengthLessThan(256.0f) ? INTERESTING : NORMAL);
+		}
+		break;
+	}
+	case EVENT_PLAYER_SCREAMED:
+	{
+		if (!entity) break;
+
+		m_aimInterface.CreateAimSpot(entity->Center(), IMPORTANT);
+		break;
+	}
+	case EVENT_INVALID:
+	default:
+		break;
+	}
+}
+
+void CBot::SetPathToGoal(CBasePlayer *goal, RouteType routeType)
 {
 	if (!goal)
 		return;
 
-	SetPathToGoal(goal->Center());
+	SetPathToGoal(goal->Center(), routeType);
 }
 
-void CBot::SetPathToGoal(CBaseEntity* goal)
+void CBot::SetPathToGoal(CBaseEntity* goal, RouteType routeType)
 {
 	if (!goal)
 		return;
 
-	SetPathToGoal(goal->Center());
+	SetPathToGoal(goal->pev->origin, routeType);
 }
 
-void CBot::SetPathToGoal(const Vector& goal)
+void CBot::SetPathToGoal(const Vector& goal, RouteType routeType)
 {
 	const float goalMovedTolerance = 240.0f;
 	// repath if a mobile goal strays this far from the path end
@@ -809,7 +975,7 @@ void CBot::SetPathToGoal(const Vector& goal)
 
 	if (needPath)
 	{
-		ShortestPathCost cost(this);
+		ShortestPathCost cost(this, routeType);
 		Vector start = pev->origin;
 
 		if (m_path.Compute(&start, &goal, cost))
@@ -849,6 +1015,9 @@ void CBot::ExecuteCommand(void)
 		pev->angles = pev->v_angle;
 		pev->angles.x /= -3.0f;
 	}
+
+	if (cv_bot_stop_attack.value != 0.0f)
+		ClearBits(m_buttonFlags, IN_ATTACK);
 
 	m_flPreviousCommandTime = gpGlobals->time;
 

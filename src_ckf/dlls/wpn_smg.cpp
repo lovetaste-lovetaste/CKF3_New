@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 #include "weapons.h"
+#include "bot/hl_bot_manager.h"
 
 enum smg_e
 {
@@ -23,7 +24,7 @@ void CSMG::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_SMG;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 19;
 
 	m_iDefaultAmmo = SMG_DEFAULT_GIVE;
@@ -39,6 +40,8 @@ void CSMG::Precache(void)
 	m_flBaseFiringRate = 0.1;
 	m_flBaseDamage = 8.0;
 	m_flBaseReloadRate = 1.4;
+	m_flBaseMaxRange = -1.0f;
+	m_iBaseExtraShots = -1;
 }
 
 int CSMG::GetItemInfo(ItemInfo *p)
@@ -59,7 +62,7 @@ int CSMG::GetItemInfo(ItemInfo *p)
 
 BOOL CSMG::Deploy(void)
 {
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_smg.mdl"), "models/CKF_III/wp_group_rf.mdl", SMG_DRAW, 0, 0, "onehanded", 54);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_smg.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), SMG_DRAW, 0, 0, "onehanded", 54);
 	//return DefaultDeploy("models/CKF_III/v_smg.mdl", "models/CKF_III/wp_smg.mdl", SMG_DRAW, "onehanded", UseDecrement() != FALSE);
 }
 
@@ -113,6 +116,8 @@ void CSMG::SMGFire(void)
 	m_pPlayer->SetAnimation(PLAYER_ATTACK1);
 
 	m_fInReload = false;
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CSMG::Reload(void)

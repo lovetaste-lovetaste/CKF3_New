@@ -114,6 +114,13 @@ moveclip_t;
 
 extern trace_t SV_ClipMoveToEntity(edict_t *ent, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end);
 
+int CL_IsThirdPerson(void)
+{
+	// || (g_iUser1 && (g_iUser2 == gEngfuncs.GetLocalPlayer()->index))
+	// this crashes the game sometimes
+	return (cam_thirdperson ? 1 : 0);
+}
+
 void CAM_Think(void)
 {
 	vec3_t origin;
@@ -126,6 +133,9 @@ void CAM_Think(void)
 	int i;
 #endif
 	vec3_t viewangles;
+
+	if ((gEngfuncs.pfnGetCvarFloat("sv_cheats") != 1 || gEngfuncs.GetMaxClients() > 1) && CL_IsThirdPerson())
+		CAM_ToFirstPerson();
 
 	switch ((int)cam_command->value)
 	{
@@ -362,7 +372,7 @@ void CAM_ToThirdPerson(void)
 	vec3_t viewangles;
 
 #if !defined (_DEBUG)
-	if (gEngfuncs.GetMaxClients() > 1)
+	if (gEngfuncs.pfnGetCvarFloat("sv_cheats") != 1)
 		return;
 #endif
 
@@ -522,11 +532,6 @@ void CAM_EndDistance(void)
 	cam_distancemove = 0;
 	cam_mousemove = 0;
 	iMouseInUse = 0;
-}
-
-int CL_IsThirdPerson(void)
-{
-	return (cam_thirdperson ? 1 : 0) || (g_iUser1 && (g_iUser2 == gEngfuncs.GetLocalPlayer()->index));
 }
 
 void CL_CameraOffset(float *ofs)

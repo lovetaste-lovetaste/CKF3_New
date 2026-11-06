@@ -1760,90 +1760,132 @@ if (FStrEq(pcmd, "fullupdate"))
 		ShowVGUIMenu(pPlayer, (pPlayer->m_iTeam == TEAM_RED) ? MENU_CLASS_RED : MENU_CLASS_BLU, (pPlayer->m_iJoiningState != JOINED) ? KEY_1 : KEY_1 | KEY_0, "");
 	}
 
-	if (FStrEq(pcmd, "chooseloadout"))
+	if (FStrEq(pcmd, "equipweapon"))
 	{
 		// todo: make vgui loadout picker
+
+		if (!TheEconManager)
+		{
+			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "Econ manager is broken/null!");
+			return;
+		}
 
 		int argc = CMD_ARGC();
 		if (argc < 3)
 		{
-			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "Usage: chooseloadout <class> <slot> <new id>");
+			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "Usage: equipweapon <class> <slot> <new id>");
 			return;
 		}
 
 		int iClass = atoi(CMD_ARGV(1));
 		if (!iClass)
 		{
-			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "chooseloadout: invalid class");
+			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "equipweapon: garbage class");
 			return;
 		}
 
 		switch (iClass)
 		{
-			case 2:
-			{
-				// normally heavy
-				iClass = CLASS_SOLDIER;
-				break;
-			}
-			case 3:
-			{
-				// normally soldier
-				iClass = CLASS_PYRO;
-				break;
-			}
-			case 4:
-			{
-				// normally pyro
-				iClass = CLASS_DEMOMAN;
-				break;
-			}
-			case 5:
-			{
-				// normally sniper
-				iClass = CLASS_HEAVY;
-				break;
-			}
-			case 6:
-			{
-				// normally medic
-				iClass = CLASS_ENGINEER;
-				break;
-			}
-			case 7:
-			{
-				// normally engineer
-				iClass = CLASS_MEDIC;
-				break;
-			}
-			case 8:
-			{
-				// normally demoman
-				iClass = CLASS_SNIPER;
-				break;
-			}
-			case CLASS_SCOUT:
-			case CLASS_SPY:
-				// dont need to change anything as the numbers align right
-				break;
-			default:
-			{
-				ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "chooseloadout: not a valid class");
-				return;
-			}
+		case 2:
+		{
+			// normally heavy
+			iClass = CLASS_SOLDIER;
+			break;
+		}
+		case 3:
+		{
+			// normally soldier
+			iClass = CLASS_PYRO;
+			break;
+		}
+		case 4:
+		{
+			// normally pyro
+			iClass = CLASS_DEMOMAN;
+			break;
+		}
+		case 5:
+		{
+			// normally sniper
+			iClass = CLASS_HEAVY;
+			break;
+		}
+		case 6:
+		{
+			// normally medic
+			iClass = CLASS_ENGINEER;
+			break;
+		}
+		case 7:
+		{
+			// normally engineer
+			iClass = CLASS_MEDIC;
+			break;
+		}
+		case 8:
+		{
+			// normally demoman
+			iClass = CLASS_SNIPER;
+			break;
+		}
+		case CLASS_SCOUT:
+		case CLASS_SPY:
+			// dont need to change anything as the numbers align right
+			break;
+		default:
+		{
+			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "equipweapon: not a valid class");
+			return;
+		}
 		}
 
 		int slot = atoi(CMD_ARGV(2));
-		if (!slot || slot > WEAPON_SLOT_MELEE || slot < WEAPON_SLOT_PRIMARY)
+		if (slot > WEAPON_SLOT_MELEE || slot < WEAPON_SLOT_PRIMARY)
 		{
-			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "chooseloadout: not a valid slot");
+			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "equipweapon: not a valid slot");
 			return;
 		}
-		slot = slot - 1; // slot--;
+		slot = slot - 1; // for the array
 
 		int newId = atoi(CMD_ARGV(3));
-		if(newId && newId < ITEM_COUNT)
-			pPlayer->m_iLoadoutEconIndex[iClass][slot] = newId;
+		if (!newId)
+		{
+			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "equipweapon: garbage id");
+			return;
+		}
+
+		if (newId >= ITEM_COUNT)
+		{
+			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "equipweapon: id is out of bounds");
+			return;
+		}
+
+		const ItemDef* pDef = TheEconManager->GetItemDef(newId);
+		if (!pDef || !pDef->szBaseClass || !pDef->szBaseClass[0])
+		{
+			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "equipweapon: item tied to id is broken, no change");
+			return;
+		}
+
+		if (!(pDef->iAllowedClasses & ClassToAllowedBit(iClass)))
+		{
+			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "equipweapon: item tied to id is not allowed on this class! No change");
+			return;
+		}
+
+		if (newId <= ITEM_NULL || newId > ITEM_COUNT)
+		{
+			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "equipweapon: id out of bounds.");
+			return;
+		}
+
+		if (newId <= ITEM_DISGUISEKIT)
+		{
+			ClientPrint(pPlayer->pev, HUD_PRINTCONSOLE, "equipweapon: id set to default");
+			newId = g_StockLoadout[iClass][slot];
+		}
+		
+		pPlayer->m_iLoadoutEconIndex[iClass][slot] = newId;
 
 		ALERT(at_console, "index is set to %i on slot %i in class %i", newId, slot, iClass);
 		return;

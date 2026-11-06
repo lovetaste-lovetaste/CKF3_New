@@ -273,6 +273,9 @@ void R_DrawParticles(void)
 
 int CParticleSystem::GetActivePartCount(void)
 {
+	return m_activecount;
+
+	/*
 	int size = m_part.size();
 	int count = 0;
 	for(int i = 0; i < size; ++i)
@@ -281,6 +284,11 @@ int CParticleSystem::GetActivePartCount(void)
 			++ count;
 	}
 	return count;
+
+	this scans everything
+	this is linear time so it is cut but i am keeping it here just in case anything else breaks ~_~
+	too many issues..wgrjwjinwgjnwgjojgwowgkgwkwgkjjjasjsgskj;lak;jlkjgls;daakjslgdjklgakjlskjalsgkljkgljsadlklkj;gdsalkj;sdglkj;kljgadslkjklgdslkj;dalkj;adslkj;d
+	*/
 }
 
 void CParticleSystem::KillAllParticles(void)
@@ -297,63 +305,76 @@ void CParticleSystem::Init(int type, int numpart, int numchild)
 	m_type = type;
 	m_part.reserve(numpart);
 	m_child.reserve(numchild);
-
 	m_dead = 0;
 	m_die = g_flClientTime + 99999;
 	m_cull = true;
 	m_parent = NULL;
+	m_activecount = 0;
+	m_freelist.clear();
 }
 
 part_t *CParticleSystem::AllocParticle(void)
 {
-	int i, size;
-	part_t *pp;
-	part_t p;
+	part_t* pp;
 
-	size = m_part.size();
-	for(i = 0; i < size; ++i)
+	if (!m_freelist.empty())
 	{
-		pp = &m_part[i];
-		if(pp->free)
-		{
-			memset(pp, 0, sizeof(part_t));
-			pp->free = 0;
-			return pp;
-		}
+		int idx = m_freelist.back();
+		m_freelist.pop_back();
+
+		pp = &m_part[idx];
+		memset(pp, 0, sizeof(part_t));
+		pp->free = 0;
+		++m_activecount;
+		return pp;
 	}
 
+	part_t p;
 	memset(&p, 0, sizeof(part_t));
 	p.free = 0;
 	m_part.push_back(p);
+	++m_activecount;
 	return &m_part.back();
+}
+
+void CParticleSystem::FreeParticle(int index)
+{
+	part_t* p = &m_part[index];
+
+	if (p->free)
+		return; // already freed
+
+	p->free = true;
+	m_freelist.push_back(index);
+	--m_activecount;
 }
 
 void CParticleSystem::UpdateParticles(void)
 {
 	int i, size;
-	part_t *p;
+	part_t* p;
 
 	Update();
 	size = m_part.size();
-	if(size)
+	if (size)
 	{
-		for(i = 0; i < size; ++i)
+		for (i = 0; i < size; ++i)
 		{
 			p = &m_part[i];
 
-			if(!p->free && g_flClientTime > p->die)
-				p->free = true;
+			if (!p->free && g_flClientTime > p->die)
+				FreeParticle(i);
 
-			if(!p->free)
+			if (!p->free)
 				R_AddVisParticles(this, p);
 		}
 	}
 
-	if(!m_dead && g_flClientTime > m_die)//mark for dead
+	if (!m_dead && g_flClientTime > m_die)//mark for dead
 	{
 		SetDead(1);
 	}
-	else if(m_dead == 1 && !GetActivePartCount())//ready for delete
+	else if (m_dead == 1 && !GetActivePartCount())//ready for delete
 	{
 		SetDead(2);
 	}

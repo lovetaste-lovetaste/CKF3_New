@@ -1,0 +1,348 @@
+{
+"classname" "worldspawn"
+"defaultteam" "0"
+"newunit" "0"
+"gametitle" "0"
+"startdark" "0"
+"MaxRange" "4096"
+"sounds" "1"
+"skyname" "plainsky"
+"mapversion" "220"
+"wad" "/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/2fort.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/canyon2.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/ckf_brick.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/ckf_coalmines.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/ckf_concrete.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/ckf_metal.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/ckf_nature.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/ckf_tile.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/ckf_wood.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/cp_dustbowl2.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/cp_dustbowl3.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/cp_egypt3.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/cp_granary.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/cr_fastlane.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/ctf_turbine.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/decals.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/dustbowl.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/egypt2.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/halflife.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/minecraft.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/ravelin.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/tempdecal.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/tfc.WAD;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/tfc2.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/turbine_decals.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/xd_map.wad;/Program Files (x86)/Steam/steamapps/common/ChickenFortressNew/ckf3/basicsand.wad"
+"_generator" "J.A.C.K. 1.1.3773 Freeware (vpHalfLife)"
+{
+( 1237.76 -1160.83 64 ) ( 1237.76 -1160.83 -32 ) ( 1237.76 795.954 64 ) FL_T_007A [ 0 1 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( 1319.68 795.954 64 ) ( 1319.68 795.954 -32 ) ( 1319.68 -1160.83 64 ) FL_T_007A [ 0 1 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( 1237.76 795.954 64 ) ( 1237.76 795.954 -32 ) ( 1319.68 795.954 64 ) FL_T_007A [ 1 0 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( 1319.68 -1160.83 64 ) ( 1319.68 -1160.83 -32 ) ( 1237.76 -1160.83 64 ) FL_T_007A [ 1 0 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( 1237.76 795.954 -32 ) ( 1237.76 -1160.83 -32 ) ( 1319.68 795.954 -32 ) FL_T_007A [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+( 1319.68 -1160.83 64 ) ( 1237.76 -1160.83 64 ) ( 1319.68 795.954 64 ) FL_T_007A [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+}
+{
+( -1310.72 795.954 64 ) ( -1310.72 795.954 -32 ) ( -1310.72 -1101.98 64 ) FL_T_007A [ 0 1 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( -1392.64 -1101.98 64 ) ( -1392.64 -1101.98 -32 ) ( -1392.64 795.954 64 ) FL_T_007A [ 0 1 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( -1310.72 -1101.98 64 ) ( -1310.72 -1101.98 -32 ) ( -1392.64 -1101.98 64 ) FL_T_007A [ 1 0 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( -1392.64 795.954 64 ) ( -1392.64 795.954 -32 ) ( -1310.72 795.954 64 ) FL_T_007A [ 1 0 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( -1310.72 -1101.98 64 ) ( -1392.64 -1101.98 64 ) ( -1310.72 795.954 64 ) FL_T_007A [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+( -1392.64 795.954 -32 ) ( -1392.64 -1101.98 -32 ) ( -1310.72 795.954 -32 ) FL_T_007A [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+}
+{
+( -1319.68 736.184 64 ) ( -1319.68 736.184 -32 ) ( -1319.68 795.034 64 ) FL_T_007A [ 0 1 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( 1237.76 795.034 64 ) ( 1237.76 795.034 -32 ) ( 1237.76 736.184 64 ) FL_T_007A [ 0 1 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( -1319.68 795.034 64 ) ( -1319.68 795.034 -32 ) ( 1237.76 795.034 64 ) FL_T_007A [ 1 0 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( 1237.76 736.184 64 ) ( 1237.76 736.184 -32 ) ( -1319.68 736.184 64 ) FL_T_007A [ 1 0 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( -1319.68 795.034 -32 ) ( -1319.68 736.184 -32 ) ( 1237.76 795.034 -32 ) FL_T_007A [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+( 1237.76 736.184 64 ) ( -1319.68 736.184 64 ) ( 1237.76 795.034 64 ) FL_T_007A [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+}
+{
+( 1237.76 -1101.06 64 ) ( 1237.76 -1101.06 -32 ) ( 1237.76 -1159.91 64 ) FL_T_007A [ 0 1 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( -1392.64 -1159.91 64 ) ( -1392.64 -1159.91 -32 ) ( -1392.64 -1101.06 64 ) FL_T_007A [ 0 1 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( 1237.76 -1159.91 64 ) ( 1237.76 -1159.91 -32 ) ( -1392.64 -1159.91 64 ) FL_T_007A [ 1 0 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( -1392.64 -1101.06 64 ) ( -1392.64 -1101.06 -32 ) ( 1237.76 -1101.06 64 ) FL_T_007A [ 1 0 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( 1237.76 -1159.91 64 ) ( -1392.64 -1159.91 64 ) ( 1237.76 -1101.06 64 ) FL_T_007A [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+( -1392.64 -1101.06 -32 ) ( -1392.64 -1159.91 -32 ) ( 1237.76 -1101.06 -32 ) FL_T_007A [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+}
+{
+( -1319.68 -1101.06 -32 ) ( -1319.68 -1101.06 -64 ) ( -1319.68 736.184 -32 ) QQQWOOD3 [ 0 1 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( 1237.76 736.184 -32 ) ( 1237.76 736.184 -64 ) ( 1237.76 -1101.06 -32 ) QQQWOOD3 [ 0 1 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( -1319.68 736.184 -32 ) ( -1319.68 736.184 -64 ) ( 1237.76 736.184 -32 ) QQQWOOD3 [ 1 0 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( 1237.76 -1101.06 -32 ) ( 1237.76 -1101.06 -64 ) ( -1319.68 -1101.06 -32 ) QQQWOOD3 [ 1 0 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( -1319.68 736.184 -64 ) ( -1319.68 -1101.06 -64 ) ( 1237.76 736.184 -64 ) QQQWOOD3 [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+( 1237.76 -1101.06 -32 ) ( -1319.68 -1101.06 -32 ) ( 1237.76 736.184 -32 ) CF006 [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+}
+{
+( 2048 1024 2528 ) ( 2048 1024 -128 ) ( 2048 -1536 2528 ) SKY [ 0 1 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( 2007.04 -1536 2528 ) ( 2007.04 -1536 -128 ) ( 2007.04 1024 2528 ) SKY [ 0 -1 0 -0 ] [ 0 0 -1 -0 ] 0 1 1
+( 2048 -1536 -128 ) ( 2007.04 -1536 -128 ) ( 2048 -1536 2528 ) SKY [ 1 0 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( 2048 1024 2528 ) ( 2007.04 1024 2528 ) ( 2048 1024 -128 ) SKY [ 1 0 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( 2048 1024 -128 ) ( 2007.04 1024 -128 ) ( 2048 -1536 -128 ) SKY [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+( 2048 -1536 2528 ) ( 2007.04 -1536 2528 ) ( 2048 1024 2528 ) SKY [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+}
+{
+( -2048 -1536 2528 ) ( -2048 -1536 -128 ) ( -2048 1024 2528 ) SKY [ 0 1 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 1024 2528 ) ( -2007.04 1024 -128 ) ( -2007.04 -1536 2528 ) SKY [ 0 1 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2048 1024 -128 ) ( -2007.04 1024 -128 ) ( -2048 1024 2528 ) SKY [ 1 0 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2048 -1536 2528 ) ( -2007.04 -1536 2528 ) ( -2048 -1536 -128 ) SKY [ 1 0 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2048 -1536 2528 ) ( -2048 1024 2528 ) ( -2007.04 -1536 2528 ) SKY [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+( -2048 1024 -128 ) ( -2048 -1536 -128 ) ( -2007.04 1024 -128 ) SKY [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+}
+{
+( -2007.04 -1536 -128 ) ( -2007.04 -1506.57 -128 ) ( -2007.04 -1536 2528 ) SKY [ 0 -1 0 -0 ] [ 0 0 -1 -0 ] 0 1 1
+( 2007.04 -1536 2528 ) ( 2007.04 -1506.57 2528 ) ( 2007.04 -1536 -128 ) SKY [ 0 1 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( 2007.04 -1536 2528 ) ( 2007.04 -1536 -128 ) ( -2007.04 -1536 2528 ) SKY [ 1 0 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 -1506.57 2528 ) ( -2007.04 -1506.57 -128 ) ( 2007.04 -1506.57 2528 ) SKY [ -1 -0 -0 -0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 -1506.57 -128 ) ( -2007.04 -1536 -128 ) ( 2007.04 -1506.57 -128 ) SKY [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+( -2007.04 -1536 2528 ) ( -2007.04 -1506.57 2528 ) ( 2007.04 -1536 2528 ) SKY [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+}
+{
+( 2007.04 1024 -128 ) ( 2007.04 994.575 -128 ) ( 2007.04 1024 2528 ) SKY [ 0 1 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 1024 2528 ) ( -2007.04 994.575 2528 ) ( -2007.04 1024 -128 ) SKY [ 0 -1 0 -0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 1024 2528 ) ( -2007.04 1024 -128 ) ( 2007.04 1024 2528 ) SKY [ 1 0 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( 2007.04 994.575 2528 ) ( 2007.04 994.575 -128 ) ( -2007.04 994.575 2528 ) SKY [ 1 0 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 994.575 2528 ) ( -2007.04 1024 2528 ) ( 2007.04 994.575 2528 ) SKY [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+( -2007.04 1024 -128 ) ( -2007.04 994.575 -128 ) ( 2007.04 1024 -128 ) SKY [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+}
+{
+( -2007.04 -1506.57 -103.178 ) ( -2007.04 -1506.57 -128 ) ( -2007.04 994.575 -103.178 ) SKY [ 0 -1 0 -0 ] [ 0 0 -1 -0 ] 0 1 1
+( 2007.04 994.575 -103.178 ) ( 2007.04 994.575 -128 ) ( 2007.04 -1506.57 -103.178 ) SKY [ 0 1 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 994.575 -103.178 ) ( -2007.04 994.575 -128 ) ( 2007.04 994.575 -103.178 ) SKY [ -1 0 0 -0 ] [ 0 0 -1 -0 ] 0 1 1
+( 2007.04 -1506.57 -103.178 ) ( 2007.04 -1506.57 -128 ) ( -2007.04 -1506.57 -103.178 ) SKY [ 1 0 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 994.575 -128 ) ( -2007.04 -1506.57 -128 ) ( 2007.04 994.575 -128 ) SKY [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+( -2007.04 -1506.57 -103.178 ) ( -2007.04 994.575 -103.178 ) ( 2007.04 -1506.57 -103.178 ) SKY [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+}
+{
+( 2007.04 994.575 2528 ) ( 2007.04 994.575 2503.18 ) ( 2007.04 -1506.57 2528 ) SKY [ 0 1 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 -1506.57 2528 ) ( -2007.04 -1506.57 2503.18 ) ( -2007.04 994.575 2528 ) SKY [ 0 -1 0 -0 ] [ 0 0 -1 -0 ] 0 1 1
+( 2007.04 -1506.57 2528 ) ( 2007.04 -1506.57 2503.18 ) ( -2007.04 -1506.57 2528 ) SKY [ 1 0 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 994.575 2528 ) ( -2007.04 994.575 2503.18 ) ( 2007.04 994.575 2528 ) SKY [ -1 0 0 -0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 -1506.57 2528 ) ( -2007.04 994.575 2528 ) ( 2007.04 -1506.57 2528 ) SKY [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+( -2007.04 994.575 2503.18 ) ( -2007.04 -1506.57 2503.18 ) ( 2007.04 994.575 2503.18 ) SKY [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+}
+{
+( -320 384 -32 ) ( -320 -768 -32 ) ( 192 384 -32 ) FL_T_007A [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( -320 -576 160 ) ( -320 192 160 ) ( 192 -576 160 ) FL_T_007A [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1
+( 192 -576 160 ) ( 192 -768 -32 ) ( -320 -576 160 ) FL_T_007A [ 1 0 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( -320 192 160 ) ( -320 384 -32 ) ( 192 192 160 ) FL_T_007A [ 1 0 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( -320 -768 -32 ) ( -320 384 -32 ) ( -320 -576 160 ) FL_T_007A [ 0 1 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+( 192 384 -32 ) ( 192 -768 -32 ) ( 192 192 160 ) FL_T_007A [ 0 1 0 0 ] [ 0 0 -1 -32 ] 0 1 1
+}
+}
+{
+"classname" "info_player_start"
+"angles" "0 0 0"
+"origin" "-1000 -182.437 5"
+}
+{
+"classname" "light_environment"
+"_light" "185 231 255 3000"
+"pitch" "66"
+"_falloff" "0"
+"_fade" "1.0"
+"angles" "66 0 0"
+"origin" "-40.9599 -182.437 2390.41"
+}
+{
+"classname" "info_player_deathmatch"
+"angles" "0 0 0"
+"origin" "942.08 -182.437 32"
+}
+{
+"classname" "info_player_deathmatch"
+"angles" "0 180 0"
+"origin" "942.08 -300.138 32"
+}
+{
+"classname" "info_player_start"
+"angles" "0 180 0"
+"origin" "-1000 -300.138 5"
+}
+{
+"classname" "info_player_start"
+"angles" "0 180 0"
+"origin" "-1000 -888.644 5"
+}
+{
+"classname" "info_player_start"
+"angles" "0 0 0"
+"origin" "-1000 -770.943 5"
+}
+{
+"classname" "info_player_start"
+"angles" "0 180 0"
+"origin" "-1000 347.218 5"
+}
+{
+"classname" "info_player_start"
+"angles" "0 0 0"
+"origin" "-1000 464.92 5"
+}
+{
+"classname" "info_player_deathmatch"
+"angles" "0 180 0"
+"origin" "942.08 347.218 32"
+}
+{
+"classname" "info_player_deathmatch"
+"angles" "0 0 0"
+"origin" "942.08 464.92 32"
+}
+{
+"classname" "info_player_deathmatch"
+"angles" "0 180 0"
+"origin" "942.08 -947.494 32"
+}
+{
+"classname" "info_player_deathmatch"
+"angles" "0 0 0"
+"origin" "942.08 -829.793 32"
+}
+{
+"classname" "trigger_hurt"
+"damagetype" "32"
+"delay" "0"
+"dmg" "9999"
+{
+( 2007.04 994.575 -80 ) ( 2007.04 994.575 -112 ) ( 2007.04 -1506.57 -80 ) AAATRIGGER [ 0 1 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 -1506.57 -80 ) ( -2007.04 -1506.57 -112 ) ( -2007.04 994.575 -80 ) AAATRIGGER [ 0 1 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( 2007.04 -1506.57 -80 ) ( 2007.04 -1506.57 -112 ) ( -2007.04 -1506.57 -80 ) AAATRIGGER [ 1 0 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 994.575 -80 ) ( -2007.04 994.575 -112 ) ( 2007.04 994.575 -80 ) AAATRIGGER [ 1 0 0 0 ] [ 0 0 -1 -0 ] 0 1 1
+( -2007.04 994.575 -112 ) ( -2007.04 -1506.57 -112 ) ( 2007.04 994.575 -112 ) AAATRIGGER [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+( 2007.04 -1506.57 -80 ) ( -2007.04 -1506.57 -80 ) ( 2007.04 994.575 -80 ) AAATRIGGER [ 1 0 0 0 ] [ 0 -1 0 -0 ] 0 1 1
+}
+}
+{
+"classname" "light"
+"_falloff" "0"
+"_fade" "1.0"
+"style" "0"
+"_light" "255 255 128 200"
+"origin" "-64 -192 288"
+}
+{
+"classname" "cycler_sprite"
+"model" "models/CKF_III/w_controlpoint.mdl"
+"angles" "0 0 0"
+"renderamt" "255"
+"rendercolor" "0 0 0"
+"framerate" "10.0"
+"scale" "1.0"
+"targetname" "cpmdl"
+"origin" "-64 -192 160"
+}
+{
+"classname" "func_controlpoint"
+"capname" "Point-Neutral"
+"caprate" "10"
+"subentity" "cpmdl"
+"zhlt_invisible" "1"
+"hudpos" "0"
+"trigonredcap" "neured"
+"trigonblucap" "neublu"
+"targetname" "cpneu"
+"timeadded" "0"
+"team" "0"
+"locked" "0"
+"disabled" "0"
+"canredcap" "1"
+"canblucap" "1"
+"angles" "0 0 0"
+{
+( -160 -160 224 ) ( -160 -224 224 ) ( -160 -160 160 ) AAATRIGGER [ 0 1 0 6 ] [ 0 0 -1 -0 ] 0 1 1
+( 32 -224 224 ) ( 32 -160 224 ) ( 32 -224 160 ) AAATRIGGER [ 0 1 0 6 ] [ 0 0 -1 -0 ] 0 1 1
+( -32 -96 224 ) ( -96 -96 224 ) ( -32 -96 160 ) AAATRIGGER [ 1 0 0 11 ] [ 0 0 -1 -0 ] 0 1 1
+( -96 -288 224 ) ( -32 -288 224 ) ( -96 -288 160 ) AAATRIGGER [ 1 0 0 11 ] [ 0 0 -1 -0 ] 0 1 1
+( -32 -288 224 ) ( -96 -288 224 ) ( 32 -224 224 ) AAATRIGGER [ 1 0 0 11 ] [ 0 -1 0 -6 ] 0 1 1
+( -32 -96 160 ) ( -96 -96 160 ) ( 32 -160 160 ) AAATRIGGER [ 1 0 0 11 ] [ 0 -1 0 -6 ] 0 1 1
+( -160 -224 224 ) ( -96 -288 224 ) ( -160 -224 160 ) AAATRIGGER [ 0 1 0 6 ] [ 0 0 -1 -0 ] 0 1 1
+( -32 -288 224 ) ( 32 -224 224 ) ( -32 -288 160 ) AAATRIGGER [ 0 1 0 6 ] [ 0 0 -1 -0 ] 0 1 1
+( 32 -160 224 ) ( -32 -96 224 ) ( 32 -160 160 ) AAATRIGGER [ 0 1 0 6 ] [ 0 0 -1 -0 ] 0 1 1
+( -96 -96 224 ) ( -160 -160 224 ) ( -96 -96 160 ) AAATRIGGER [ 0 1 0 6 ] [ 0 0 -1 -0 ] 0 1 1
+}
+}
+{
+"classname" "info_map_settings"
+"endtime" "15"
+"freezetime" "3"
+"setuptime" "60"
+"setupcondition" "1"
+"waittime" "30"
+"reddominatedaction" "0"
+"bludominatedaction" "0"
+"angles" "0 0 0"
+"origin" "-64 -192 400"
+}
+{
+"classname" "trigger_roundtimer"
+"timeoutaction" "1"
+"hudpos" "0"
+"totaltime" "180"
+"locked" "1"
+"disabled" "0"
+"announcetime" "0"
+"targetname" "rtred"
+"team" "1"
+"angles" "0 0 0"
+"origin" "0 -192 400"
+}
+{
+"classname" "trigger_rtcontrols"
+"targetname" "neured"
+"lockedop" "1"
+"lockedarg" "0"
+"disabledop" "0"
+"disabledarg" "0"
+"timeop" "0"
+"timearg" "0"
+"target" "rtred"
+"angles" "0 0 0"
+"origin" "64 -192 400"
+}
+{
+"classname" "trigger_rtcontrols"
+"targetname" "neured"
+"lockedop" "1"
+"lockedarg" "1"
+"disabledop" "0"
+"disabledarg" "0"
+"timeop" "0"
+"timearg" "0"
+"target" "rtblu"
+"angles" "0 0 0"
+"origin" "128 -192 400"
+}
+{
+"classname" "trigger_cpcontrols"
+"targetname" "game_setup_expired"
+"lockedop" "1"
+"lockedarg" "0"
+"disabledop" "0"
+"disabledarg" "0"
+"canredcapop" "0"
+"canredcaparg" "0"
+"canblucapop" "0"
+"canblucaparg" "0"
+"teamop" "0"
+"teamarg" "0"
+"target" "cpneu"
+"angles" "0 0 0"
+"origin" "-64 -192 464"
+}
+{
+"classname" "trigger_roundtimer"
+"timeoutaction" "2"
+"hudpos" "1"
+"totaltime" "180"
+"locked" "1"
+"disabled" "0"
+"targetname" "rtblu"
+"announcetime" "0"
+"team" "2"
+"angles" "0 0 0"
+"origin" "-128 -192 400"
+}
+{
+"classname" "trigger_rtcontrols"
+"targetname" "neublu"
+"lockedop" "1"
+"lockedarg" "0"
+"disabledop" "0"
+"disabledarg" "0"
+"timeop" "0"
+"timearg" "0"
+"target" "rtblu"
+"angles" "0 0 0"
+"origin" "-192 -192 400"
+}
+{
+"classname" "trigger_rtcontrols"
+"targetname" "neublu"
+"lockedop" "1"
+"lockedarg" "1"
+"disabledop" "0"
+"disabledarg" "0"
+"timeop" "0"
+"timearg" "0"
+"target" "rtred"
+"angles" "0 0 0"
+"origin" "-256 -192 400"
+}

@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 #include "weapons.h"
+#include "bot/hl_bot_manager.h"
 
 enum minigun_e
 {
@@ -35,7 +36,7 @@ void CMinigun::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_MINIGUN;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_2bone.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_2bone.mdl"));
 	pev->sequence = 1;
 	m_iDefaultAmmo = MINIGUN_DEFAULT_GIVE;
 	m_iSpin = STATE_MINIGUN_NONE;
@@ -60,6 +61,8 @@ void CMinigun::Precache(void)
 	m_flBaseFiringRate = 0.1;
 	m_flBaseDamage = 9.0;
 	m_flBaseReloadRate = -1.0f;
+	m_flBaseMaxRange = -1.0f;
+	m_iBaseExtraShots = 3;
 }
 
 int CMinigun::GetItemInfo(ItemInfo *p)
@@ -83,7 +86,7 @@ BOOL CMinigun::Deploy(void)
 {
 	m_iSpin = STATE_MINIGUN_NONE;
 	
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_minigun.mdl"), "models/CKF_III/wp_group_2bone.mdl", MINIGUN_DRAW, 0, 0, "shotgun", 3);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_minigun.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_2bone.mdl"), MINIGUN_DRAW, 0, 0, "shotgun", 3);
 }
 
 void CMinigun::Holster(int skiplocal)
@@ -135,7 +138,7 @@ void CMinigun::PrimaryAttack(void)
 	ClearMultiDamage();
 
 	if(!m_iShotsFired) m_pPlayer->CKFFireBullets(vecSrc, gpGlobals->v_forward, 0.0, 8192, BULLET_PLAYER_TF2, int(GetDamage()), iCrit, m_pPlayer->pev, m_pPlayer->random_seed, FALSE);
-	int iMaxBurst = (m_iShotsFired) ? 4 : 3;
+	int iMaxBurst = (m_iShotsFired) ? GetExtraShots() + 1 : GetExtraShots();
 
 	//Prepare to Draw Tracer
 	int iTracerColor = (iCrit >= 2) ? m_pPlayer->m_iTeam : 0;
@@ -175,6 +178,8 @@ void CMinigun::PrimaryAttack(void)
 	//m_pPlayer->m_flEjectBrass = gpGlobals->time + 0.05;
 
 	m_pPlayer->SetAnimation(PLAYER_ATTACK1);
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CMinigun::ItemPostFrame(void)

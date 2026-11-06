@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 #include "weapons.h"
+#include "bot/hl_bot_manager.h"
 
 #define	KNIFE_BODYHIT_VOLUME 128
 #define	KNIFE_WALLHIT_VOLUME 512
@@ -32,7 +33,7 @@ void CButterfly::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_BUTTERFLY;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 14;
 	m_iClip = WEAPON_NOCLIP;
 	FallInit();
@@ -49,7 +50,7 @@ void CButterfly::Precache(void)
 
 	// these are for the butterfly knife in particular
 	m_flBaseDamage = 40.0;
-	m_flBaseSmackTime = 0.05;
+	m_flBaseSmackTime = 0.01;
 	m_flBaseFiringRate = 0.8;
 }
 
@@ -74,7 +75,7 @@ BOOL CButterfly::Deploy(void)
 {
 	m_iShotsFired = 0;
 
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_butterfly.mdl"), "models/CKF_III/wp_group_rf.mdl", BUTTERFLY_DRAW, 0, 0, "knife", 42);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_butterfly.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), BUTTERFLY_DRAW, 0, 0, "knife", 42);
 }
 
 void CButterfly::Holster(int skiplocal)
@@ -94,6 +95,8 @@ void CButterfly::PrimaryAttack(void)
 	m_flTimeWeaponIdle = m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + GetFiringRate();
 
 	m_pPlayer->Disguise_Stop();
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CButterfly::SecondaryAttack(void)
@@ -161,7 +164,7 @@ void CButterfly::Swing(void)
 {
 	UTIL_MakeVectors(m_pPlayer->pev->v_angle);
 	Vector vecSrc = m_pPlayer->pev->origin;
-	Vector vecEnd = vecSrc + gpGlobals->v_forward * 48;
+	Vector vecEnd = vecSrc + gpGlobals->v_forward * GetMaxRange();
 
 	PLAYBACK_EVENT_FULL(FEV_NOTHOST, m_pPlayer->edict(), m_usFireScript, 0, (float *)&g_vecZero, (float *)&g_vecZero, m_iMeleeCrit, 0, m_iId, 0, (m_iMeleeCrit >= 2) ? TRUE : FALSE, 0);
 

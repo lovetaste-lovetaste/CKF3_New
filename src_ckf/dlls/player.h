@@ -343,7 +343,6 @@ public:
 	void AddToPlayer(float flDuration, qboolean bFlash);
 	virtual void OnThink(void);
 	virtual void OnRemove(void);
-public:
 };
 
 class CCondCritBoost : public CPlayerCondition
@@ -369,11 +368,25 @@ public:
 	entvars_t *m_pevInflictor;
 };
 
+class CCondMarkedForDeath : public CPlayerCondition
+{
+public:
+	void AddToPlayer(float flDuration, entvars_t* pevIgniter, entvars_t* pevInflictor);
+	virtual void OnThink(void);
+	virtual void OnRemove(void);
+public:
+	int m_iDamage;
+	float m_flNextEffect;
+	entvars_t* m_pevIgniter;
+	entvars_t* m_pevInflictor;
+};
+
 typedef struct
 {
 	CCondInvulnerable Invulnerable;
 	CCondCritBoost CritBoost;
 	CCondAfterBurn AfterBurn;
+	CCondMarkedForDeath MarkedForDeath;
 }cond_manager_t;
 
 typedef struct
@@ -474,9 +487,11 @@ public:
 	BOOL IsOnLadder(void);
 	void UpdatePlayerSound(void);
 	void DeathSound(void);
+	float m_flNextVoiceTime;
 	bool AttemptToPlayVoiceline(const char* voiceline);
-	bool AttemptToPlayVoiceline(CBasePlayer* pPlayer, const char* voiceline);
+	bool AttemptToPlayVoicelineForMyself(const char* voiceline);
 	bool AttemptToPlayVoiceline(int iTeam, const char* voiceline);
+	void FootstepPlayed();
 	void SetAnimation(PLAYER_ANIM playerAnim);
 	void SetWeaponAnimType(const char *szExtention);
 	void CheatImpulseCommands(int iImpulse);
@@ -584,6 +599,7 @@ public:
 	void Invulnerable_Add(float flDuration, qboolean bFlash);
 	void CritBoost_Add(float flDuration);
 	void AfterBurn_Add(float flDuration, int iDamage, entvars_t *pevIgniter, entvars_t *pevInflictor);
+	void MarkedForDeath_Add(float flDuration, bool bHidden, entvars_t* pevIgniter, entvars_t* pevInflictor);
 
 	void Condition_Init(void);
 	void Condition_Think(void);
@@ -811,6 +827,8 @@ public:
 	bool m_bBackStabKilled;
 	bool m_bLastHitBackStab;
 	bool m_bHeadShotKilled;
+	bool m_bLastHitMelee;
+	bool m_bMeleeKilled;
 	float m_fUbercharge;
 	int m_iUbercharge;
 	float m_flUberThink;

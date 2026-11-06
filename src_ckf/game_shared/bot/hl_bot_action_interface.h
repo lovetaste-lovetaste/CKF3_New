@@ -7,6 +7,8 @@
 
 class CBot;
 
+#include "hl_bot_fight_manager.h"
+
 enum ActionResult
 {
 	DONE,
@@ -28,6 +30,7 @@ public:
 	virtual void OnResume(CBot* me) = 0;	// action that was suspended into is now finished, so this action is now the active one
 	virtual const char* GetName() const = 0;
 	virtual bool ShouldHurry(CBot* me) = 0;
+	virtual bool ShouldRetreat(CBot* me) = 0;
 
 	// do not change or inherit these
 	ActionResult Status() { return m_Status; }
@@ -60,14 +63,16 @@ enum ScenarioMoniterCheckResult
 
 class CTFBotScenarioMoniterInterface
 {
-	// handles universal things that would normally stop a player
-	// eg get health or get ammo
+	// handles universal things that would normally stop a player dead in their tracks, regardless of what they are doing
+	// eg get health, get ammo, run away, etc
 public:
 	CTFBotScenarioMoniterInterface()
 	{
 		m_hpAction = NULL;
 		m_retreatAction = NULL;
 		m_ammoAction = NULL;
+		m_winAction = NULL;
+		m_loseAction = NULL;
 		m_bot = NULL;
 	}
 
@@ -82,7 +87,7 @@ public:
 		m_loseAction = lose_action;
 	}
 
-	int Check();
+	int Check(CTFAction* action);
 	void Update(int attrib = 0);
 private:
 	CBot* m_bot;
@@ -104,13 +109,18 @@ public:
 
 	virtual void Update();
 	
+	bool ShouldWeFight() { return m_bFighting; };
+
 	CUtlVector<CTFAction*> m_Actions;
 	CTFAction* m_bAction;
 	CTFBotScenarioMoniterInterface m_scenarioMoniterInterface;	// Scenario moniter interface
+	CBotFightManager m_fightManager;
 	void Reset(CTFAction* first = NULL);
 	void Debug(bool status) { m_isDebug = status; }			///< turn debugging on/off
 private:
 	CBot* m_bot;
+
+	bool m_bFighting;
 
 	char debug_info[512];
 	bool m_isDebug;
@@ -127,5 +137,8 @@ static bool IsInside(const Vector& p, CBaseEntity* e)
 		&& p.z > e->pev->absmin.z && p.z < e->pev->absmax.z;
 }
 // this was for control points but i might as well just make it a universal thing
+
+inline int FNullEnt(CBaseEntity* ent) { return ((!ent) || FNullEnt(ent->edict())); }
+
 
 #endif

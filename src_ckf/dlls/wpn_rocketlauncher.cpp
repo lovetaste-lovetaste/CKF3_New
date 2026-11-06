@@ -5,6 +5,8 @@
 #include "weapons.h"
 #include "buildable.h"
 
+#include "bot/hl_bot_manager.h"
+
 #define CHAN_WEAPON	1
 
 enum rocketlauncher_e
@@ -28,7 +30,7 @@ void CRocketLauncher::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_ROCKETLAUNCHER;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 3;
 
 	m_iDefaultAmmo = ROCKET_DEFAULT_GIVE;
@@ -46,6 +48,9 @@ void CRocketLauncher::Precache(void)
 	m_flBaseFiringRate = 0.8;
 	m_flBaseDamage = 90.0;
 	m_flBaseReloadRate = 0.7;
+	m_flBaseVelocity = 1100.0f;
+	m_flBaseMaxRange = -1.0f;
+	m_iBaseExtraShots = -1;
 }
 
 int CRocketLauncher::GetItemInfo(ItemInfo *p)
@@ -69,7 +74,7 @@ BOOL CRocketLauncher::Deploy(void)
 {
 	m_fInSpecialReload = 0;
 	
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_rocketlauncher.mdl"), "models/CKF_III/wp_group_rf.mdl", ROCKETLAUNCHER_DRAW, 0, 0, "shotgun", 6);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_rocketlauncher.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), ROCKETLAUNCHER_DRAW, 0, 0, "shotgun", 6);
 }
 
 void CRocketLauncher::PrimaryAttack(void)
@@ -108,6 +113,7 @@ void CRocketLauncher::RocketLauncherFire()
 	pRocket->pev->skin = m_pPlayer->m_iTeam-1;
 	pRocket->m_iPjFlags = PJ_AIRBLAST_DEFLECTABLE | PJ_AIRBLAST_OWNER;
 	pRocket->m_fDmg = GetDamage();
+	pRocket->pev->velocity = gpGlobals->v_forward * GetVelocity();
 
 	MESSAGE_BEGIN(MSG_BROADCAST, gmsgDrawFX);
 	WRITE_BYTE(FX_ROCKETTRAIL);
@@ -125,6 +131,8 @@ void CRocketLauncher::RocketLauncherFire()
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + GetFiringRate();
 
 	m_fInSpecialReload = 0;
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CRocketLauncher::Reload(void)

@@ -116,6 +116,7 @@ public:
 	}
 	part_t *AllocParticle(void);
 	void UpdateParticles(void);
+	void FreeParticle(int index);
 	void AddChild(CParticleSystem *t){ m_child.push_back(t); t->SetParent(this); }
 public:
 	void SetParent(CParticleSystem *t){ m_parent = t; }
@@ -149,6 +150,8 @@ public:
 
 public:
 	std::vector<part_t> m_part;
+	std::vector<int> m_freelist;
+	int m_activecount;
 	float	m_die;
 	int		m_dead;
 	int		m_type;

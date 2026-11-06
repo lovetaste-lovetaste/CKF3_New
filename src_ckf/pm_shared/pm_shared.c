@@ -41,6 +41,7 @@ float vJumpAngles[3];
 #endif
 
 int PM_NoCollision(int iPlayerIndex, int iEntIndex);
+int PM_FootstepPlayed(int iPlayerIndex, int iStep);
 
 int pm_shared_initialized = 0;
 
@@ -444,6 +445,9 @@ void PM_PlayStepSound(int step, float fvol)
 			break;
 		}
 	}
+
+	if (pmove->server)
+		PM_FootstepPlayed(pmove->player_index, step);
 }
 
 int PM_MapTextureTypeStepType(chTextureType)

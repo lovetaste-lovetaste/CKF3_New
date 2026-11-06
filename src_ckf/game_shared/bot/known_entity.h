@@ -15,6 +15,10 @@ public:
 		m_whenLastBecameVisible = -1.0f;
 		m_isVisible = false;
 		m_whenBecameKnown = gpGlobals->time;
+		m_whenLastKnown = gpGlobals->time;
+		m_lastKnownArea = NULL;
+		m_lastKnownPostion = g_vecZero;
+		m_lastKnownVelocity = g_vecZero;
 		m_hasLastKnownPositionBeenSeen = false;
 		UpdatePosition();
 	}
@@ -23,16 +27,18 @@ public:
 
 	virtual void Destroy(void)
 	{
-		m_who = NULL;
+		m_who = (CBaseEntity*)NULL;
 		m_isVisible = false;
 	}
 
 	virtual void UpdatePosition(void)		// could be seen or heard, but now the entity's position is known
 	{
-		if (m_who)
+		CBaseEntity* who = GetEntity();
+		if (who && IsEntityValid())
 		{
-			m_lastKnownPostion = m_who->pev->origin;
-			m_lastKnownArea = TheNavAreaGrid.GetNearestNavArea(&m_who->pev->origin);
+			m_lastKnownPostion = who->pev->origin;
+			m_lastKnownVelocity = who->pev->velocity;
+			m_lastKnownArea = TheNavAreaGrid.GetNearestNavArea(&who->pev->origin);
 			m_whenLastKnown = gpGlobals->time;
 		}
 	}
@@ -45,6 +51,11 @@ public:
 	virtual const Vector& GetLastKnownPosition(void) const
 	{
 		return m_lastKnownPostion;
+	}
+
+	virtual const Vector& GetLastKnownVelocity(void) const
+	{
+		return m_lastKnownVelocity;
 	}
 
 	// Have we had a clear view of the last known position of this entity?
@@ -126,10 +137,20 @@ public:
 		return m_whenLastSeen > 0.0f;
 	}
 
+	virtual bool IsEntityValid(void) const
+	{
+		CBaseEntity* who = GetEntity();
+		return who && !FNullEnt(who->pev);
+	}
+
 	// has our knowledge of this entity become obsolete?
 	virtual bool IsObsolete(void) const
 	{
-		return GetEntity() == NULL || !m_who->IsAlive() || GetTimeSinceLastKnown() > 10.0f;
+		CBaseEntity* who = GetEntity();
+		if (!who || FNullEnt(who->pev))
+			return true;
+
+		return !who->IsAlive() || GetTimeSinceLastKnown() > 10.0f;
 	}
 
 	virtual bool operator==(const CKnownEntity& other) const
@@ -149,20 +170,24 @@ public:
 	}
 
 	// custom
-	// returns the player's team, or -1 if the entity isn't a player
-	// mainly for bot enemy checking
 	virtual int GetTeam() const
 	{
-		CBaseEntity* ent = GetEntity();
-		if (!ent || !ent->IsPlayer())
+		CBaseEntity* who = GetEntity();
+		if (!who || FNullEnt(who->pev) || !who->IsAlive())
 			return -1;
 
-		return ((CBasePlayer*)ent)->m_iTeam;
+		if (who->Classify() == CLASS_BUILDABLE)
+			return ((CBaseBuildable*)who)->m_iTeam;
+		if (who->IsPlayer())
+			return ((CBasePlayer*)who)->m_iTeam;
+
+		return -1;
 	}
 
 private:
-	CBaseEntity* m_who;
+	mutable EHANDLE m_who;
 	Vector m_lastKnownPostion;
+	Vector m_lastKnownVelocity;
 	bool m_hasLastKnownPositionBeenSeen;
 	CNavArea* m_lastKnownArea;
 	float m_whenLastSeen;

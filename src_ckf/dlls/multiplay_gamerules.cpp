@@ -3366,6 +3366,87 @@ int CHalfLifeMultiplay::CPCountPoints(int iTeam)
 	return iCount;
 }
 
+CControlPoint* CHalfLifeMultiplay::GetNextControlPointToDefend(int iTeam)
+{
+	CControlPoint* pBest = NULL;
+	float flBestScore = -1;
+
+	for (int i = 0; i < m_ControlPoints.Count(); ++i)
+	{
+		CControlPoint* pPoint = (CControlPoint*)CBaseEntity::Instance(m_ControlPoints[i]);
+
+		if (pPoint->m_bLocked || pPoint->m_bDisabled)
+			continue;
+
+		// Only care about points we currently own  
+		if (pPoint->pev->team != iTeam)
+			continue;
+
+		BOOL bUnderThreat = FALSE;
+		float flUrgency = 0;
+
+		switch (pPoint->m_iState)
+		{
+		case CP_CAPTURING:
+			// Enemy is actively capping our point  
+			if (pPoint->m_iCapTeam != iTeam)
+			{
+				bUnderThreat = TRUE;
+				// The closer to 100, the more urgent  
+				flUrgency = pPoint->m_flProgress;
+			}
+			break;
+		case CP_BLOCKED:
+			bUnderThreat = TRUE;
+			flUrgency = 50.0f; // mid priority
+			break;
+		case CP_BACK:
+		case CP_IDLE:
+		default:
+			break;
+		}
+
+		if (!bUnderThreat)
+			continue;
+
+		if (flUrgency > flBestScore)
+		{
+			flBestScore = flUrgency;
+			pBest = pPoint;
+		}
+	}
+	return pBest;
+}
+
+CControlPoint* CHalfLifeMultiplay::GetNextControlPointToAttack(int iTeam)
+{
+	CControlPoint* pBest = NULL;
+	float flBestScore = -1;
+
+	for (int i = 0; i < m_ControlPoints.Count(); ++i)
+	{
+		CControlPoint* pPoint = (CControlPoint*)CBaseEntity::Instance(m_ControlPoints[i]);
+
+		if (pPoint->m_bLocked || pPoint->m_bDisabled)
+			continue;                 // can't be touched at all  
+		if (pPoint->pev->team == iTeam)
+			continue;                 // already ours  
+		if (iTeam == TEAM_RED && !pPoint->m_bCanRedCap)
+			continue;
+		if (iTeam == TEAM_BLU && !pPoint->m_bCanBluCap)
+			continue;
+
+		float flScore = pPoint->m_flProgress;
+
+		if (flScore > flBestScore)
+		{
+			flBestScore = flScore;
+			pBest = pPoint;
+		}
+	}
+	return pBest;
+}
+
 extern int gmsgCPState;
 extern int gmsgCPInit;
 

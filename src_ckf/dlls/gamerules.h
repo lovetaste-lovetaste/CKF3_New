@@ -9,6 +9,7 @@ class CItem;
 class CBasePlayerAmmo;
 class CBaseBuildable;//hz extern here
 class CBuildSapper;//hz extern here
+class CControlPoint;//for cp defend/attack functions
 
 enum
 {
@@ -286,6 +287,8 @@ public:
 public:
 	BOOL CPRoundEndCheck(BOOL bNeededPlayers);
 	int CPCountPoints(int iTeam);
+	CControlPoint* GetNextControlPointToDefend(int iTeam);
+	CControlPoint* GetNextControlPointToAttack(int iTeam);
 	void CPSendState(void);
 	void CPSendState(entvars_t *pevPoint);
 	void CPSendState(CBasePlayer *pPlayer);

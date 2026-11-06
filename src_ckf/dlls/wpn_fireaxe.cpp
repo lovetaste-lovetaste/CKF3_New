@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 #include "weapons.h"
+#include "bot/hl_bot_manager.h"
 
 #define	KNIFE_BODYHIT_VOLUME 128
 #define	KNIFE_WALLHIT_VOLUME 512
@@ -83,13 +84,15 @@ void CFireaxe::PrimaryAttack(void)
 	SendWeaponAnim(FIREAXE_SLASH1 + (m_iShotsFired++) % 2, UseDecrement() != FALSE);
 	m_pPlayer->SetAnimation(PLAYER_ATTACK1);
 	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + GetFiringRate();
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CFireaxe::Swing(void)
 {
 	UTIL_MakeVectors(m_pPlayer->pev->v_angle);
 	Vector vecSrc = m_pPlayer->GetGunPosition();
-	Vector vecEnd = vecSrc + gpGlobals->v_forward * 48;
+	Vector vecEnd = vecSrc + gpGlobals->v_forward * GetMaxRange();
 
 	PLAYBACK_EVENT_FULL(FEV_NOTHOST, m_pPlayer->edict(), m_usFireScript, 0, (float *)&g_vecZero, (float *)&g_vecZero, m_iMeleeCrit, 0, m_iId, 0, (m_iMeleeCrit >= 2) ? TRUE : FALSE, 0);
 

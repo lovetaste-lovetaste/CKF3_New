@@ -376,6 +376,14 @@ void ShowHudMenu(int type, int keys)
 
 extern "C"
 {
+	int PM_FootstepPlayed(int iPlayerIndex, int iStep)
+	{
+		return 0;
+	}
+}
+
+extern "C"
+{
 	int PM_NoCollision(int iPlayerIndex, int iEntIndex)
 	{
 		cl_entity_t *pEnt = gEngfuncs.GetEntityByIndex(iEntIndex);

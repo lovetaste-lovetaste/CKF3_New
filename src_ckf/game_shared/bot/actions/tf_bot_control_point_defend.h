@@ -15,8 +15,11 @@ public:
 	{
 		return false;
 	}
+	virtual bool ShouldRetreat(CBot* me)
+	{
+		return false;
+	}
 private:
-	CControlPoint* GetClosestControlPoint(CBot* me);
 	CountdownTimer m_seekTimer;
 };
 

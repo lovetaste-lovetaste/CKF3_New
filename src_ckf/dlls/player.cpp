@@ -21,7 +21,8 @@
 #include "buildable.h"
 #include <string>
 
-#include "bot/hl_bot_manager.h" // TheHLBots
+#include "bot/hl_bot_manager.h"
+#include "bot/GameEvent.h"
 #include "bot/bot_util.h"
 
 extern cvar_t cv_bot_last_area_update_tolerance;
@@ -311,6 +312,17 @@ int CBasePlayer::PM_NoCollision(CBaseEntity *pEntity)
 	return 0;
 }
 
+extern "C" int PM_FootstepPlayed(int iPlayerIndex, int iStep)
+{
+	CBasePlayer* pPlayer = (CBasePlayer*)CBaseEntity::Instance(INDEXENT(iPlayerIndex + 1));
+	if (!pPlayer)
+		return 0;
+
+	SEND_EVENT(EVENT_PLAYER_FOOTSTEP, pPlayer, NULL);
+
+	return 1;
+}
+
 extern "C" int PM_NoCollision(int iPlayerIndex, int iEntIndex)
 {
 	edict_t *pPlayerEdict = INDEXENT(iPlayerIndex);
@@ -590,36 +602,35 @@ void CBasePlayer::Pain(int hitgroup)
 	*/
 	if(m_iDisguise != DISGUISE_YES)
 	{
-		switch (RANDOM_LONG(1, 12))
+		switch (RANDOM_LONG(1, 3))
 		{
 		case 1: AttemptToPlayVoiceline("painsharp01"); break;
 		case 2: AttemptToPlayVoiceline("painsharp02"); break;
 		case 3: AttemptToPlayVoiceline("painsharp03"); break;
 		}
-		/*
+		
 		switch (RANDOM_LONG(0, 2))
 		{
-			case 0: EMIT_SOUND(ENT(pev), CHAN_VOICE, "player/bhit_flesh-1.wav", VOL_NORM, ATTN_NORM); break;
-			case 1: EMIT_SOUND(ENT(pev), CHAN_VOICE, "player/bhit_flesh-2.wav", VOL_NORM, ATTN_NORM); break;
-			case 2: EMIT_SOUND(ENT(pev), CHAN_VOICE, "player/bhit_flesh-3.wav", VOL_NORM, ATTN_NORM); break;
+		case 0: EMIT_SOUND(ENT(pev), CHAN_BODY, "player/bhit_flesh-1.wav", VOL_NORM, ATTN_NORM); break;
+		case 1: EMIT_SOUND(ENT(pev), CHAN_BODY, "player/bhit_flesh-2.wav", VOL_NORM, ATTN_NORM); break;
+		case 2: EMIT_SOUND(ENT(pev), CHAN_BODY, "player/bhit_flesh-3.wav", VOL_NORM, ATTN_NORM); break;
 		}
-		*/
 	}
 	else
 	{
-		switch (RANDOM_LONG(1, 12))
+		switch (RANDOM_LONG(1, 3))
 		{
-		case 1: AttemptToPlayVoiceline(this, "painsharp01"); break;
-		case 2: AttemptToPlayVoiceline(this, "painsharp02"); break;
-		case 3: AttemptToPlayVoiceline(this, "painsharp03"); break;
+		case 1: AttemptToPlayVoicelineForMyself("painsharp01"); break;
+		case 2: AttemptToPlayVoicelineForMyself("painsharp02"); break;
+		case 3: AttemptToPlayVoicelineForMyself("painsharp03"); break;
 		}
 
 		/*
 		switch (RANDOM_LONG(0, 2))
 		{
-			case 0: UTIL_PlayWAV(this, "player/bhit_flesh-1.wav");break;
-			case 1: UTIL_PlayWAV(this, "player/bhit_flesh-2.wav");break;
-			case 2: UTIL_PlayWAV(this, "player/bhit_flesh-3.wav");break;
+		case 0: UTIL_PlayWAV(this, "player/bhit_flesh-1.wav"); break;
+		case 1: UTIL_PlayWAV(this, "player/bhit_flesh-2.wav"); break;
+		case 2: UTIL_PlayWAV(this, "player/bhit_flesh-3.wav"); break;
 		}
 		*/
 	}
@@ -680,8 +691,22 @@ static char* GetClassStringName(int iClass)
 	return tf_class_names[iClass];
 }
 
+void CBasePlayer::FootstepPlayed()
+{
+	SEND_EVENT(EVENT_PLAYER_FOOTSTEP, this, NULL);
+}
+
+#define VOICELINE_DELAY_TIME 0.1f
+
 bool CBasePlayer::AttemptToPlayVoiceline(const char* voiceline)
 {
+	if (m_flNextVoiceTime > gpGlobals->time)
+		return false;
+
+	SEND_EVENT(EVENT_PLAYER_VOICELINE, this, NULL);
+
+	m_flNextVoiceTime = gpGlobals->time + VOICELINE_DELAY_TIME;
+
 	char* model;
 	model = GetClassStringName(m_iClass);
 
@@ -697,8 +722,15 @@ bool CBasePlayer::AttemptToPlayVoiceline(const char* voiceline)
 	return false;
 }
 
-bool CBasePlayer::AttemptToPlayVoiceline(CBasePlayer* pPlayer, const char* voiceline)
+bool CBasePlayer::AttemptToPlayVoicelineForMyself(const char* voiceline)
 {
+	if (m_flNextVoiceTime > gpGlobals->time)
+		return false;
+
+	// do not send the event here
+
+	m_flNextVoiceTime = gpGlobals->time + VOICELINE_DELAY_TIME;
+
 	char* model;
 	model = GetClassStringName(m_iClass);
 
@@ -707,7 +739,7 @@ bool CBasePlayer::AttemptToPlayVoiceline(CBasePlayer* pPlayer, const char* voice
 		char szSound[128];
 		sprintf(szSound, "ckf_decap/player/vox/%s_%s.wav", model, voiceline);
 
-		UTIL_PlayWAV(pPlayer, szSound);
+		UTIL_PlayWAV(this, szSound);
 		return true;
 	}
 
@@ -716,6 +748,13 @@ bool CBasePlayer::AttemptToPlayVoiceline(CBasePlayer* pPlayer, const char* voice
 
 bool CBasePlayer::AttemptToPlayVoiceline(int iTeam, const char* voiceline)
 {
+	if (m_flNextVoiceTime > gpGlobals->time)
+		return false;
+
+	// do not send the event here
+
+	m_flNextVoiceTime = gpGlobals->time + VOICELINE_DELAY_TIME;
+
 	char* model;
 	model = GetClassStringName(m_iClass);
 
@@ -734,23 +773,23 @@ bool CBasePlayer::AttemptToPlayVoiceline(int iTeam, const char* voiceline)
 
 void CBasePlayer::DeathSound(void)
 {
-	// todo: change with tf2 sounds
+	// TODO: if player died via melee, then play the crit death sound
 
-	// TODO: if player died via critical hits, then play the death sound
-
-	if (m_bCritKilled)
+	if (m_bCritKilled || m_bMeleeKilled)
 	{
+		SEND_EVENT(EVENT_PLAYER_SCREAMED, this, NULL);
+
 		switch (RANDOM_LONG(1, 3))
 		{
 		case 1: AttemptToPlayVoiceline("paincrticialdeath01"); break;
 		case 2: AttemptToPlayVoiceline("paincrticialdeath02"); break;
 		case 3: AttemptToPlayVoiceline("paincrticialdeath03"); break;
 		}
-
+		ALERT(at_console, "CRIT/MELEE DEATH");
 	}
 	else
 	{
-		switch (RANDOM_LONG(1, 4))
+		switch (RANDOM_LONG(1, 3))
 		{
 		case 1: AttemptToPlayVoiceline("painsharp01"); break;
 		case 2: AttemptToPlayVoiceline("painsharp02"); break;
@@ -776,7 +815,7 @@ void CBasePlayer::DeathSound(void)
 
 int CBasePlayer::TakeHealth(float flHealth, int bitsDamageType)
 {
-	if (!bitsDamageType) // this is just here so that i dont have to go back and edit everything else LOLOLOL
+	if (!bitsDamageType || bitsDamageType == 0) // this is just here so that i dont have to go back and edit everything else LOLOLOL
 	{
 		int oldhp = pev->health;
 		int planned = min(pev->health + flHealth, pev->max_health);
@@ -906,6 +945,10 @@ void CBasePlayer::TraceAttack(entvars_t *pevAttacker, float flDamage, Vector vec
 	m_bLastHitBackStab = FALSE;
 
 	if(bitsDamageType & DMG_BACKSTAB) m_bLastHitBackStab = TRUE;
+
+	m_bLastHitMelee = FALSE;
+
+	if (bitsDamageType & DMG_SLASH) m_bLastHitMelee = TRUE;
 
 	AddMultiDamage(pevAttacker, this, flDamage, bitsDamageType, iCrit);
 }
@@ -1039,13 +1082,14 @@ int CBasePlayer::TakeDamage(entvars_t *pevInflictor, entvars_t *pevAttacker, flo
 		if (!FNullEnt(ENT(pevInflictor)))
 			m_vecInjuredLOS = pev->origin - pevInflictor->origin;
 
-		Pain(m_LastHitGroup);
-
 		m_lastDamageAmount = flDamage;
 
-		if (pev->health > flDamage && m_iDisguise != DISGUISE_YES)
+		if (pev->health > flDamage)
 		{
-			SetAnimation(PLAYER_SMALL_FLINCH);
+			Pain(m_LastHitGroup);
+
+			if(m_iDisguise != DISGUISE_YES)
+				SetAnimation(PLAYER_SMALL_FLINCH);
 		}
 
 		SendSpecHealth(true, pevInflictor);
@@ -1100,7 +1144,8 @@ int CBasePlayer::TakeDamage(entvars_t *pevInflictor, entvars_t *pevAttacker, flo
 
 	m_lastDamageAmount = flDamage;
 
-	Pain(m_LastHitGroup);
+	if (pev->health > flDamage)
+		Pain(m_LastHitGroup);
 
 	SendSpecHealth(false, pevInflictor);
 
@@ -1455,6 +1500,8 @@ void CBasePlayer::Killed(entvars_t *pevAttacker, int iGib)
 		m_bCritKilled = true;
 	if(m_bLastHitBackStab)
 		m_bBackStabKilled = true;
+	if (m_bLastHitMelee)
+		m_bMeleeKilled = true;
 
 	g_pGameRules->PlayerKilled(this, pevAttacker, g_pevLastInflictor);
 
@@ -1642,10 +1689,19 @@ bool CBasePlayer::HitConditionCheck(const CBasePlayerWeapon* pWeapon, CBasePlaye
 
 			break;
 		}
+		case HITCOND_CRIT_MINICRIT:
+		{
+			if (pTarget->m_Cond.MarkedForDeath.m_iStatus)
+				return true;
+
+			break;
+		}
 		default:
 			break;
 		}
 	}
+
+	return false;
 }
 
 bool CBasePlayer::HitConditionCheck(CBasePlayer* pTarget)
@@ -3077,7 +3133,7 @@ void CBasePlayer::Jump(void)
 	if (pev->waterlevel >= 2)
 		return;
 
-	if (!(pev->button & IN_JUMP) || (pev->oldbuttons & IN_JUMP))//if (!(m_afButtonPressed & IN_JUMP))
+	if (!(pev->button & IN_JUMP))//if (!(m_afButtonPressed & IN_JUMP))
 		return;
 
 	if ((!m_iMultiJumpMax || !(m_iMultiJumpCurrent < m_iMultiJumpMax)) && (!(pev->flags & FL_ONGROUND) || !pev->groundentity))
@@ -4168,6 +4224,7 @@ void CBasePlayer::Spawn(void)
 	m_bCritKilled = FALSE;
 	m_bBackStabKilled = FALSE;
 	m_bHeadShotKilled = FALSE;
+	m_bMeleeKilled = FALSE;
 	//»Ö¸´ÒþÉí
 	m_iCloak = CLOAK_NO;
 	pev->renderamt = 255;
@@ -4415,6 +4472,8 @@ void CBasePlayer::Spawn(void)
 
 	UTIL_ScreenFade(this, Vector(0, 0, 0), 0.001, 0, 0, 0);
 	SyncRoundTimer();
+
+	m_flNextVoiceTime = -1.0f;
 }
 
 void CBasePlayer::Precache(void)
@@ -7197,6 +7256,63 @@ void CCondAfterBurn::AddToPlayer(float flDuration, int iDamage, entvars_t *pevIg
 void CBasePlayer::AfterBurn_Add(float flDuration, int iDamage, entvars_t *pevIgniter, entvars_t *pevInflictor)
 {
 	m_Cond.AfterBurn.AddToPlayer(flDuration, iDamage, pevIgniter, pevInflictor);
+}
+
+//Marked For Death CCondMarkedForDeath
+
+void CCondMarkedForDeath::OnThink(void)
+{
+	if (gpGlobals->time > m_flNextThink)
+	{
+		// m_pPlayer->pev->effects |= EF_AFTERBURN;//we just add this effect per 0.5s
+
+		m_flNextThink = gpGlobals->time + 0.5f;
+	}
+	if (gpGlobals->time > m_flNextEffect)
+	{
+		MESSAGE_BEGIN(MSG_BROADCAST, gmsgDrawFX);
+		WRITE_BYTE(FX_BURNINGPLAYER);
+		WRITE_SHORT(m_pPlayer->entindex());
+		WRITE_BYTE(m_pPlayer->m_iTeam);
+		WRITE_COORD(m_flDie - gpGlobals->time);
+		MESSAGE_END();
+
+		m_flNextEffect = gpGlobals->time + 1.0f;
+	}
+}
+
+void CCondMarkedForDeath::OnRemove(void)
+{
+	// m_pPlayer->pev->effects &= ~EF_AFTERBURN;
+
+	/*
+	MESSAGE_BEGIN(MSG_BROADCAST, gmsgDrawFX);
+	WRITE_BYTE(FX_BURNINGPLAYER);
+	WRITE_SHORT(m_pPlayer->entindex());
+	WRITE_BYTE(m_pPlayer->m_iTeam);
+	WRITE_COORD(0);
+	MESSAGE_END();
+	*/
+}
+
+void CCondMarkedForDeath::AddToPlayer(float flDuration, entvars_t* pevIgniter, entvars_t* pevInflictor)
+{
+	if (!m_iStatus)
+	{
+		m_iStatus = 1;
+
+		m_pevIgniter = pevIgniter;
+		m_pevInflictor = pevInflictor;
+
+		m_flNextEffect = gpGlobals->time;
+		m_flNextThink = gpGlobals->time;
+	}
+	m_flDie = gpGlobals->time + flDuration;
+}
+
+void CBasePlayer::MarkedForDeath_Add(float flDuration, bool bHidden, entvars_t* pevIgniter, entvars_t* pevInflictor)
+{
+	m_Cond.MarkedForDeath.AddToPlayer(flDuration, pevIgniter, pevInflictor);
 }
 
 void CBasePlayer::Uber_Think(void)

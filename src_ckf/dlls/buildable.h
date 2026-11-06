@@ -67,6 +67,11 @@ protected:
 	int m_iDesiredUpgrade;
 };
 
+#define MAX_BUILDABLES_PER_BUCKET 128 
+
+extern CBaseBuildable* g_Buildables[3][5][MAX_BUILDABLES_PER_BUCKET];
+extern int g_BuildableCount[3][5];
+
 #define SENTRY_RANGE 1100
 #define SENTRY_TURNRATE 180 // was 160
 #define SENTRY_TURNRATE_SLOW 36

@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 
+#include "GameEvent.h"
 #include "hl_bot_manager.h"
 #include "hl_bot.h"
 #include "bot_util.h"
@@ -17,6 +18,7 @@ CHLBotManager *TheHLBots = NULL;
 
 cvar_t cv_bot_traceview		= { "bot_traceview", "0", FCVAR_SERVER };
 cvar_t cv_bot_stop			= { "bot_stop", "0", FCVAR_SERVER };
+cvar_t cv_bot_stop_attack	= { "bot_stop_attack", "0", FCVAR_SERVER };
 cvar_t cv_bot_show_nav		= { "bot_show_nav", "0", FCVAR_SERVER };
 cvar_t cv_bot_show_danger	= { "bot_show_danger", "0", FCVAR_SERVER };
 cvar_t cv_bot_nav_edit		= { "nav_edit", "0", FCVAR_SERVER };
@@ -32,6 +34,7 @@ void Bot_RegisterCvars( void )
 {
 	CVAR_REGISTER( &cv_bot_traceview );
 	CVAR_REGISTER( &cv_bot_stop );
+	CVAR_REGISTER( &cv_bot_stop_attack );
 	CVAR_REGISTER( &cv_bot_show_nav );
 	CVAR_REGISTER( &cv_bot_show_danger );
 	CVAR_REGISTER( &cv_bot_nav_edit );
@@ -175,6 +178,34 @@ static bool str_isnumber(const char* s)
 			return false;
 
 	return true;
+}
+
+void CHLBotManager::OnEvent(GameEventType event, CBaseEntity* entity, CBaseEntity* other)
+{
+	// propogate event to all bots
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		CBasePlayer* player = static_cast<CBasePlayer*>(UTIL_PlayerByIndex(i));
+
+		if (player == NULL)
+			continue;
+
+		if (FNullEnt(player->pev))
+			continue;
+
+		if (FStrEq(STRING(player->pev->netname), ""))
+			continue;
+
+		if (!player->IsBot())
+			continue;
+
+		// do not send self-generated event
+		if (entity == player)
+			continue;
+
+		CBot* bot = static_cast<CBot*>(player);
+		bot->OnEvent(event, entity, other);
+	}
 }
 
 void CHLBotManager::ServerCommand( const char *pcmd )

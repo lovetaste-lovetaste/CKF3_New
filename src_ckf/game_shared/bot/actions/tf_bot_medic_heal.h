@@ -8,6 +8,8 @@
 class CTFBotMedicHeal : public CTFAction
 {
 public:
+	CTFBotMedicHeal() : m_bRetreat(false) {}
+
 	virtual void OnEnter(CBot* me);
 	virtual void Update(CBot* me);
 	virtual void OnExit(CBot* me);
@@ -17,6 +19,10 @@ public:
 	{
 		return false;
 	}
+	virtual bool ShouldRetreat(CBot* me);
+
+private:
+	bool m_bRetreat;
 };
 
 #endif

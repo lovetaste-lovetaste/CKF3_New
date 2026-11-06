@@ -4,6 +4,7 @@
 #include "player.h"
 #include "weapons.h"
 #include "gamerules.h"
+#include "bot/hl_bot_manager.h"
 
 enum sapper_e
 {
@@ -23,7 +24,7 @@ void CSapper::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_SAPPER;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 17;
 	m_iDefaultAmmo = -1;
 	FallInit();
@@ -34,8 +35,11 @@ void CSapper::Precache(void)
 	PRECACHE_MODEL("models/CKF_III/v_sapper.mdl");
 	PRECACHE_SOUND("CKF_III/sapper_plant.wav");
 
-	m_flBaseDamage = 12.5;
+	m_flBuildingDamage = 12.5;
+	m_flBaseDamage = 0.0;
 	m_flBaseReloadRate = -1.0f;
+	m_flBaseMaxRange = 80;
+	m_iBaseExtraShots = -1;
 }
 
 int CSapper::GetItemInfo(ItemInfo *p)
@@ -56,22 +60,23 @@ int CSapper::GetItemInfo(ItemInfo *p)
 
 BOOL CSapper::Deploy(void)
 {
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_sapper.mdl"), "models/CKF_III/wp_group_rf.mdl", (m_pPlayer->m_iCloak == CLOAK_NO) ? SAPPER_DRAW : SAPPER_DRAW2, 0, 0, "onehanded", 51);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_sapper.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), (m_pPlayer->m_iCloak == CLOAK_NO) ? SAPPER_DRAW : SAPPER_DRAW2, 0, 0, "onehanded", 51);
 }
 
 void CSapper::PrimaryAttack(void)
 {
-	if(m_bDelayedFire)
-		return;
+	//if(m_bDelayedFire)
+		//return;
+	// this does not happen in live tf2, so it is removed
 
-	m_bDelayedFire = TRUE;
+	// m_bDelayedFire = TRUE;
 
 	UTIL_MakeVectors(m_pPlayer->pev->v_angle + m_pPlayer->pev->punchangle);
 
 	Vector vecSrc = m_pPlayer->GetGunPosition() + gpGlobals->v_forward * 8 + gpGlobals->v_right * 4 + gpGlobals->v_up * -2;
 
 	TraceResult tr;
-	UTIL_TraceLine(vecSrc, vecSrc + gpGlobals->v_forward * 80, dont_ignore_monsters, m_pPlayer->edict(), &tr);
+	UTIL_TraceLine(vecSrc, vecSrc + gpGlobals->v_forward * GetMaxRange(), dont_ignore_monsters, m_pPlayer->edict(), &tr);
 
 	if(!tr.pHit)
 		return;
@@ -93,8 +98,10 @@ void CSapper::PrimaryAttack(void)
 		return;
 
 	CBuildSapper *pSapper = CBuildSapper::CreateBuildSapper(pBuild, m_pPlayer);
-	pSapper->m_fDmg = GetDamage();
+	pSapper->m_fDmg = TheEconManager->GetAttributeValue(this, ATK_DAMAGE, m_flBuildingDamage);
 	EMIT_SOUND(ENT(pev), CHAN_WEAPON, "CKF_III/sapper_plant.wav", VOL_NORM, ATTN_NORM);
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CSapper::SecondaryAttack(void)

@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 #include "weapons.h"
+#include "bot/hl_bot_manager.h"
 
 enum pistol_e
 {
@@ -24,7 +25,7 @@ void CPistol::Spawn(void)
 	Precache();
 	m_iId = WEAPON_PISTOL;
 	m_bForEngineer = FALSE;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 5;
 	m_iDefaultAmmo = PISTOL_DEFAULT_GIVE;
 
@@ -43,6 +44,8 @@ void CPistol::Precache(void)
 	m_flBaseFiringRate = 0.167;
 	m_flBaseDamage = 15.0;
 	m_flBaseReloadRate = 1.25;
+	m_flBaseMaxRange = -1.0f;
+	m_iBaseExtraShots = -1;
 }
 
 int CPistol::GetItemInfo(ItemInfo *p)
@@ -68,7 +71,7 @@ int CPistol::iMaxAmmo1(void)
 
 BOOL CPistol::Deploy(void)
 {
-	return GroupDeploy(TheEconManager->GetViewmodel(this, (!m_bForEngineer) ? "models/CKF_III/v_pistol.mdl" : "models/CKF_III/v_pistol_engineer.mdl"), "models/CKF_III/wp_group_rf.mdl", PISTOL_DRAW, 0, 0, "onehanded", 15);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, (!m_bForEngineer) ? "models/CKF_III/v_pistol.mdl" : "models/CKF_III/v_pistol_engineer.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), PISTOL_DRAW, 0, 0, "onehanded", 15);
 }
 
 void CPistol::PrimaryAttack(void)
@@ -131,6 +134,8 @@ void CPistol::PistolFire()
 	m_pPlayer->SetAnimation(PLAYER_ATTACK1);
 
 	m_fInReload = false;
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CPistol::Reload(void)

@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "player.h"
 #include "weapons.h"
+#include "bot/hl_bot_manager.h"
 
 #define CHAN_WEAPON	1
 
@@ -25,7 +26,7 @@ void CSyringeGun::Spawn(void)
 
 	Precache();
 	m_iId = WEAPON_SYRINGEGUN;
-	SET_MODEL(ENT(pev), "models/CKF_III/wp_group_rf.mdl");
+	SET_MODEL(ENT(pev), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"));
 	pev->sequence = 9;
 	m_iDefaultAmmo = SYRINGEGUN_DEFAULT_GIVE;
 	FallInit();
@@ -42,6 +43,8 @@ void CSyringeGun::Precache(void)
 	m_flBaseFiringRate = 0.1;
 	m_flBaseDamage = 10.0;
 	m_flBaseReloadRate = 1.6;
+	m_flBaseMaxRange = -1.0f;
+	m_iBaseExtraShots = -1;
 }
 
 int CSyringeGun::GetItemInfo(ItemInfo *p)
@@ -63,7 +66,7 @@ int CSyringeGun::GetItemInfo(ItemInfo *p)
 
 BOOL CSyringeGun::Deploy(void)
 {
-	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_syringegun.mdl"), "models/CKF_III/wp_group_rf.mdl", SYRINGEGUN_DRAW, 0, 0, "onehanded", 27);
+	return GroupDeploy(TheEconManager->GetViewmodel(this, "models/CKF_III/v_syringegun.mdl"), TheEconManager->GetPlayermodel(this, "models/CKF_III/wp_group_rf.mdl"), SYRINGEGUN_DRAW, 0, 0, "onehanded", 27);
 }
 
 void CSyringeGun::PrimaryAttack(void)
@@ -122,6 +125,8 @@ void CSyringeGun::SyringeGunFire(void)
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.80;
 
 	m_fInReload = false;
+
+	SEND_EVENT(EVENT_WEAPON_FIRED, this, m_pPlayer);
 }
 
 void CSyringeGun::Reload(void)

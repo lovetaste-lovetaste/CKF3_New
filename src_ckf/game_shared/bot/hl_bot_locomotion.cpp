@@ -146,8 +146,8 @@ const Vector& CTFBotLocomotion::GetEyes() const
 {
 	CBot* player = GetBot();
 
-	m_feet = player ? player->EyePosition() : g_vecZero;
-	return m_feet;
+	m_eyes = player ? player->EyePosition() : g_vecZero;
+	return m_eyes;
 }
 
 float CTFBotLocomotion::GetMoveAngle(void) const
@@ -245,16 +245,14 @@ bool CTFBotLocomotion::IsVisible(const Vector& pos, bool testFOV) const
 		return false;
 	}
 
-	bool visible = (player->FVisible(pos) == TRUE);
-
-	bool inFOV = true;
 	if (testFOV)
 	{
 		Vector copy = pos;
-		inFOV = player->FInViewCone(&copy);
+		if(!player->FInViewCone(&copy))
+			return false;
 	}
 
-	return visible && inFOV;
+	return (player->FVisible(pos) == TRUE);
 }
 
 // from the source sdk
