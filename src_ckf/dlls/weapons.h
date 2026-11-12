@@ -403,8 +403,20 @@ public:
 	float GetVelocity() { return TheEconManager->GetAttributeValue(this, ATK_VELOCITY, m_flBaseVelocity); }
 	float GetMaxRange() { return TheEconManager->GetAttributeValue(this, ATK_RANGE, m_flBaseMaxRange); }
 	int GetExtraShots() { return TheEconManager->GetAttributeInt(this, ATK_SHOT_AMOUNT, m_iBaseExtraShots); };
+	void SetupDefault()
+	{
+		m_flBaseDamage = -1.0f;
+		m_flBaseFiringRate = -1.0f;
+		m_flBaseSmackTime = -1.0f;
+		m_flBaseReloadRate = -1.0f;
+		m_flBaseVelocity = -1.0f;
+		m_flBaseMaxRange = -1.0f;
+		m_iBaseExtraShots = -1;
+	}
+
 	void SetupMeleeValues()
 	{
+		SetupDefault();
 		m_flBaseDamage = 65.0;
 		m_flBaseSmackTime = 0.2;
 		m_flBaseFiringRate = m_flBaseSmackTime + 0.6;

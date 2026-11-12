@@ -49,7 +49,7 @@ void CMedigun::Precache(void)
 	PRECACHE_SOUND("CKF_III/invulnerable_off.wav");
 
 	m_usFireScript = PRECACHE_EVENT(1, "events/ckf_medigun.sc");
-
+	SetupDefault();
 	m_flBaseFiringRate = -1.0;
 	m_flBaseReloadRate = -1.0f;
 	m_flBaseMaxRange = -1.0f;

@@ -24,6 +24,8 @@ void CTFBotSeekAndDestroy::Update(CBot* me)
 		return;
 	}
 
+	me->SelectDesiredWeapon();
+
 	CBaseEntity* enemy = me->GetEnemy();
 
 	if(me->HasEnemy() && enemy)

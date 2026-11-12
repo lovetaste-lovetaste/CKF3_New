@@ -32,6 +32,8 @@ bool CTFBotControlPointMoniter::ShouldHurry(CBot* me)
 
 void CTFBotControlPointMoniter::Update(CBot* me)
 {
+	me->SelectDesiredWeapon();
+
 	CControlPoint* attackPoint = g_pGameRules->GetNextControlPointToAttack(me->m_iTeam);
 	CControlPoint* defendPoint = g_pGameRules->GetNextControlPointToDefend(me->m_iTeam);
 

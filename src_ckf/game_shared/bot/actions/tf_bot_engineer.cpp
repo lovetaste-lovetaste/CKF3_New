@@ -83,9 +83,13 @@ void CTFBotEngineerAction::Update(CBot* me)
 
 	if (me->HasEnemy())
 	{
-		me->SwitchSlotWeapon(WEAPON_SLOT_PRIMARY);
-		Suspend_For(new CTFBotSeekAndDestroy(RANDOM_FLOAT(3.0f, 12.0f)), "There is an enemy!");
-		return;
+		me->SelectDesiredWeapon();
+		float time = EntTimeToKillEnt(me, me->GetEnemy());
+		if (time && time > 0 && time < FLT_MAX)
+		{
+			Suspend_For(new CTFBotSeekAndDestroy(EntTimeToKillEnt(me, me->GetEnemy())), "There is an enemy!");
+			return;
+		}
 	}
 
 	int attrib = GetBuildingAttributes(me);

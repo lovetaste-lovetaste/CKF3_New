@@ -57,7 +57,7 @@ void CMinigun::Precache(void)
 	PRECACHE_SOUND("CKF_III/minigun_wind_down.wav");
 
 	m_usFireScript = PRECACHE_EVENT(1, "events/ckf_minigun.sc");
-
+	SetupDefault();
 	m_flBaseFiringRate = 0.1;
 	m_flBaseDamage = 9.0;
 	m_flBaseReloadRate = -1.0f;

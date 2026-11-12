@@ -1,5 +1,7 @@
 // go attack the points
 
+// MEANT FOR ATTACK AND DEFEND! FOR REGULAR CP / KOTH, LOOK AT CTFBOTCONTROLPOINTMONITER
+
 #include "extdll.h"
 #include "util.h"
 #include "cbase.h"

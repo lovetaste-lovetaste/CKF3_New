@@ -6962,10 +6962,10 @@ void CBasePlayer::Health_Think(void)
 	m_pHealer = NULL;
 	m_iHealerCount = 0;
 
-	for(int i = 1; i < gpGlobals->maxClients; ++i)
+	for(int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		pPlayer = (CBasePlayer *)UTIL_PlayerByIndex(i);
-		if (!pPlayer || !FNullEnt(pPlayer->pev)) continue;
+		if (!pPlayer || FNullEnt(pPlayer->pev)) continue;
 		if(pPlayer->IsAlive() && pPlayer->m_iClass == CLASS_MEDIC)
 		{
 			if(pPlayer->m_pActiveItem && pPlayer->m_pActiveItem->iItemSlot() == WEAPON_SLOT_SECONDARY) 
@@ -8146,10 +8146,11 @@ int CBasePlayer::DmgRecord_Get(CBasePlayer *pAttacker, float flBefore)
 	int iCount = 0;
 	for(int i = m_DmgRecord.Count() - 1; i >= 0; --i)
 	{
-		if(gpGlobals->time - m_DmgRecord[i].flTime > 30)
+		if(gpGlobals->time - m_DmgRecord[i].flTime > flBefore)
 			break;
 
-		iCount += m_DmgRecord[i].iDamage;
+		if(m_DmgRecord[i].pevAttacker == pAttacker->pev)
+			iCount += m_DmgRecord[i].iDamage;
 	}
 
 	return iCount;

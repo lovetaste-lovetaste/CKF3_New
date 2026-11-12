@@ -43,7 +43,7 @@ void CScattergun::Precache(void)
 	PRECACHE_SOUND("CKF_III/scattergun_reload.wav");
 
 	m_usFireScript = PRECACHE_EVENT(1, "events/ckf_scattergun.sc");
-
+	SetupDefault();
 	m_flBaseFiringRate = 0.64;
 	m_flBaseDamage = 6;
 	m_flBaseReloadRate = 0.56;

@@ -37,7 +37,7 @@ void CSniperifle::Precache(void)
 	PRECACHE_SOUND("CKF_III/sniperifle_shoot.wav");
 
 	m_usFireScript = PRECACHE_EVENT(1, "events/ckf_sniperifle.sc");
-
+	SetupDefault();
 	m_flBaseFiringRate = 1.5;
 	m_flBaseDamage = 50.0;
 	m_flBaseReloadRate = -1.0f;

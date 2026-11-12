@@ -53,7 +53,7 @@ void CFlamethrower::Precache(void)
 	PRECACHE_SOUND("CKF_III/flamethrower_redirect.wav");
 
 	m_usFireScript = PRECACHE_EVENT(1, "events/ckf_flamethrower.sc");
-
+	SetupDefault();
 	m_flBaseFiringRate = 0.04;
 	m_flBaseDamage = 6.2;
 	m_flBaseReloadRate = -1.0f;

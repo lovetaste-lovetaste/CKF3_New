@@ -39,7 +39,7 @@ void CSyringeGun::Precache(void)
 	PRECACHE_SOUND("CKF_III/syringegun_shoot.wav");
 
 	m_usFireScript = PRECACHE_EVENT(1, "events/ckf_syringegun.sc");
-
+	SetupDefault();
 	m_flBaseFiringRate = 0.1;
 	m_flBaseDamage = 10.0;
 	m_flBaseReloadRate = 1.6;

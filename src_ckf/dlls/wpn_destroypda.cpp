@@ -28,11 +28,7 @@ void CDestroyPDA::Precache(void)
 {
 	PRECACHE_MODEL("models/CKF_III/v_destroypda.mdl");
 
-	m_flBaseFiringRate = -1.0;
-	m_flBaseReloadRate = -1.0f;
-	m_flBaseMaxRange = -1.0f;
-	m_flBaseDamage = 0.0f;
-	m_iBaseExtraShots = -1;
+	SetupDefault();
 }
 
 int CDestroyPDA::GetItemInfo(ItemInfo *p)

@@ -36,7 +36,7 @@ void CRevolver::Precache(void)
 	PRECACHE_MODEL("models/CKF_III/v_revolver.mdl");
 	PRECACHE_SOUND("CKF_III/revolver_shoot.wav");
 	m_usFireScript = PRECACHE_EVENT(1, "events/ckf_revolver.sc");
-
+	SetupDefault();
 	m_flBaseFiringRate = 0.58;
 	m_flBaseDamage = 40;
 	m_flBaseReloadRate = 1.16;

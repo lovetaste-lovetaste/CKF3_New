@@ -13,6 +13,10 @@
 #define FOR_EACH_VEC( vecName, iteratorName ) \
 	for ( int iteratorName = 0; iteratorName < vecName.Count(); iteratorName++ )
 
+static const float BotCommandInterval = 1.0f / 30.0f;
+static const float BotFullThinkInterval = BotCommandInterval * 10.0f; // for every 10 commands, one full think is applied
+// just ten ticks though so its fine
+
 enum KickStatus
 {
 	NOT_KICKED = 0,
@@ -24,13 +28,17 @@ class CBot : public CBasePlayer
 {
 public:
 	CBot(void);
-
 	static CBot* CreateBot(const char* name, bool quotaManaged = false);
-
 	virtual void Spawn(void);
-
 	void Think(void);
 	void OnEvent(GameEventType event, CBaseEntity* entity, CBaseEntity* other);
+
+	// this is from the source sdk 2013
+	float TransientlyConsistentRandomValue(float period = 10.0f, int seedValue = 0)
+	{
+		int timeMod = (int)(gpGlobals->time / period) + 1;
+		return fabs(cos((float)(seedValue + (entindex() * timeMod))));
+	}
 
 	float GetMoveSpeed(void) const;
 	void MoveForward(void);
@@ -44,9 +52,9 @@ public:
 	void MoveTowardPos(const Vector& pos);
 
 	// recompute goal
-	void SetPathToGoal(const Vector& goal, RouteType routeType = NORMAL_ROUTE);
-	void SetPathToGoal(CBasePlayer* goal, RouteType routeType = NORMAL_ROUTE);
-	void SetPathToGoal(CBaseEntity* goal, RouteType routeType = NORMAL_ROUTE);
+	void SetPathToGoal(const Vector& goal,	RouteType routeType = NORMAL_ROUTE); // should probably make a non const overload for this LOOLOLOLOL
+	void SetPathToGoal(CBasePlayer* goal,	RouteType routeType = NORMAL_ROUTE);
+	void SetPathToGoal(CBaseEntity* goal,	RouteType routeType = NORMAL_ROUTE);
 	bool HasPath(void) { return m_path.IsValid(); }
 	void ForcePath(CNavPath path) { m_path = path; } // only use this if u know what ur doing!!!!!!!!!!!!!
 	bool MakePath(CNavArea* endArea, const Vector& goal)
@@ -72,7 +80,6 @@ public:
 			return false;
 		return MakePath(endArea, *endArea->GetCenter());
 	}
-	
 	void StopPath()
 	{
 		if (!HasPath())
@@ -107,6 +114,8 @@ public:
 	const CKnownEntity* GetPrimaryKnownTeammate(bool onlyVisibleThreats = true);
 
 	float m_flLastWeaponHeard;
+
+	void SelectDesiredWeapon();
 private:
 	// decision logic
 	void Update(void);
@@ -118,7 +127,6 @@ private:
 	void UpdateStuckMonitor(void);
 
 	CTFAction* DesiredAction(int forceclass = 0);
-	void SelectDesiredWeapon();
 
 	void UpdateKnownEntities(void);
 

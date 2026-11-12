@@ -44,7 +44,7 @@ void CRocketLauncher::Precache(void)
 	PRECACHE_SOUND("CKF_III/rocketlauncher_shoot.wav");
 
 	m_usFireScript = PRECACHE_EVENT(1, "events/ckf_launcher.sc");
-
+	SetupDefault();
 	m_flBaseFiringRate = 0.8;
 	m_flBaseDamage = 90.0;
 	m_flBaseReloadRate = 0.7;

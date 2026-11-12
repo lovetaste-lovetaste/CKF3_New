@@ -10,46 +10,13 @@
 #include "hl_bot_fight_manager.h"
 #include "nav_chasepath.h"
 
-float EntTimeToKillEnt(CBasePlayer* player, CBaseEntity* target)
+void CBotFightManager::OnEnterNewFight()
 {
-	if (!player)
-		return FLT_MAX;
+	m_directionPicked = (CircleStrafeDirection)RANDOM_LONG(LEFT, GO_TO_BACK);
+	// this is the direction that the bots are biased towards. while strafing, they will prefer this direction a bit more
+	// see: Fundamentals of Strafe
 
-	CBasePlayerWeapon* pWeapon = (CBasePlayerWeapon*)player->m_pActiveItem;
-	if (!pWeapon)
-		return FLT_MAX;
-
-	float ourDMG = pWeapon->GetDamage();
-
-	if (ourDMG > 0.0f)
-	{
-		float distance = (player->pev->origin - target->pev->origin).Length();
-
-		int burst = pWeapon->GetExtraShots();
-
-		// multi hit weapons need their extra shots considered so the damage is accurate
-		if (burst > 0)
-			ourDMG *= burst + 1;
-
-		int shots = (int)ceil(target->pev->health / ourDMG);
-
-		float ttk = (shots - 1) * pWeapon->GetFiringRate();
-
-		// if reloads are needed, then increase ttk by the amount of time it would take to reload
-		bool ammoLimited = pWeapon->GetMaxClip() != WEAPON_NOCLIP;
-		if (ammoLimited && shots > pWeapon->m_iClip)
-			ttk += pWeapon->GetReloadRate() * (shots - pWeapon->m_iClip);
-
-		// if the weapons need to be in range ( melee weapons ), and we/they are out of range, then increase ttk by the time it would take to reach the range required
-		float range = pWeapon->GetMaxRange();
-
-		if (range && range > 0 && distance > range)
-			ttk += (distance - range) / player->GetPlayerMaxSpeed();
-
-		return ttk;
-	}
-
-	return FLT_MAX;
+	m_bWalkToEnemy = false; // this gets changed by the ttk calcs in Update
 }
 
 void CBotFightManager::Update(FightType fightType)
@@ -57,16 +24,13 @@ void CBotFightManager::Update(FightType fightType)
 	if (!m_bot || !m_bot->HasEnemy())
 		return;
 
-	/*
-	if (!m_bot->GetEnemy()->IsPlayer())
+	if (!m_enemy || m_enemy != m_bot->GetEnemy())
 	{
-		// buildings are deliberately here!!!
-
-		return;
+		m_enemy = m_bot->GetEnemy();
+		OnEnterNewFight();
 	}
-	*/
 
-	CBaseEntity* target = m_bot->GetEnemy();
+	CBaseEntity* target = m_enemy;
 	if (!target)
 		return;
 
@@ -74,6 +38,8 @@ void CBotFightManager::Update(FightType fightType)
 	{
 	case FIGHT_DUEL:
 	{
+		CBasePlayerWeapon* pWeapon = (CBasePlayerWeapon*)m_bot->m_pActiveItem;
+
 		if (m_RocketCheckTimer.IsElapsed())
 		{
 			m_RocketCheckTimer.Start(RANDOM_FLOAT(0.2,1.0));
@@ -106,7 +72,6 @@ void CBotFightManager::Update(FightType fightType)
 				// we found a valid rocket, so we should JUMP!!!
 				m_bot->PressJump();
 
-				CBasePlayerWeapon* pWeapon = (CBasePlayerWeapon*)m_bot->m_pActiveItem;
 				if (pWeapon && pWeapon->m_iId == WEAPON_FLAMETHROWER)
 				{
 					CFlamethrower* pFlame = (CFlamethrower*)pWeapon;
@@ -122,15 +87,6 @@ void CBotFightManager::Update(FightType fightType)
 			}
 		}
 
-		if (m_pickSideTimer.IsElapsed() || m_directionPicked == NULL_DIR)
-		{
-			// todo: use enemy movement dir to see if we should mirror or anti mirror
-
-			m_pickSideTimer.Start(RANDOM_FLOAT(0.1, 2.0));
-			m_directionPicked = (CircleStrafeDirection)RANDOM_LONG(LEFT, GO_TO_BACK);
-			m_bWalkToEnemy = RANDOM_LONG(0, 2) == 0 ? false : true;
-		}
-		
 		if(m_TimeToKillTimer.IsElapsed())
 		{
 			m_TimeToKillTimer.Start(RANDOM_FLOAT(0.1,0.33));
@@ -180,19 +136,56 @@ void CBotFightManager::Update(FightType fightType)
 				}
 			}
 
-			m_bWillWeWin = ttk < targetTTK && targetTTK - ttk >= 0.5f;
-			// checks if we will be able to kill the enemy at least half a second faster
+			
+			float range = pWeapon ? pWeapon->GetMaxRange() : 8192.0f; // 8192 is max map size iirc
+			m_bWalkToEnemy = (targetTTK - ttk >= 1.0f) || ttk < 0.1;
+			// press w if we can kill the enemy a second faster than the enemy can kill us OR if we can kill super quick ( usually next shot will be enough to kill )
+			
+			if (range && range > 0 && range < (target->pev->origin - m_bot->pev->origin).Length())
+				m_bWalkToEnemy = true;
+			// also press w if we need to get in range to use the weapon
+
+
+
+			m_bWillWeWin = ttk < targetTTK || m_bWalkToEnemy;
+			// if we need to walk to the enemy ( see above ), then fight normally
+			// otherwise, only fight if we can kill the enemy first
 		}
 
+		/*
 		if (!m_bWillWeWin)
 		{
 			Update(FIGHT_RETREAT); // if we would die first, then just run away
+			// todo: change this so the bot still fights but in a careful way
 			return;
 		}
+		*/
 
-		// we prob will win this, so fight!!!
+		// we might be able to win this, so fight!!!
 
-		MoveAroundTarget(m_directionPicked, 256.0, m_bWalkToEnemy);
+		CircleStrafeDirection direction = m_directionPicked;
+
+		if (m_bot->TransientlyConsistentRandomValue(BotFullThinkInterval) > 0.6f)
+		{
+			direction = (CircleStrafeDirection)RANDOM_LONG(LEFT, GO_TO_BACK);
+
+			if (direction == m_directionPicked)
+				direction = m_directionPicked >= 4 ? LEFT : (CircleStrafeDirection)(m_directionPicked + 1);
+			// makes sure that the same direction isnt picked
+		}
+
+		float optimalRange = 256.0f;
+		if (!m_bWillWeWin)
+			optimalRange = m_bWalkToEnemy ? 512.0f : 768.0f;
+		if (pWeapon)
+		{
+			float range = pWeapon ? pWeapon->GetMaxRange() : 8192.0f; // 8192 is max map size iirc
+		
+			if(range && range > 0)
+				optimalRange = range;
+		}
+
+		MoveAroundTarget(m_directionPicked, optimalRange, m_bWalkToEnemy);
 		
 		break;
 	}
@@ -279,6 +272,11 @@ void CBotFightManager::MoveAroundTarget(CircleStrafeDirection direction, float r
 	bool tooFar = dist > (range + tolerance);
 	bool tooClose = dist < (range - tolerance);
 
+	if (tooFar)
+		Update(FIGHT_CHASE);
+	else if (tooClose)
+		Update(FIGHT_RETREAT);
+	//DirectionToAngle(NORTH);
 	bool goLeft = true;
 
 	switch (direction)
@@ -307,19 +305,39 @@ void CBotFightManager::MoveAroundTarget(CircleStrafeDirection direction, float r
 		break;
 	}
 
-	if (tooFar)
-	{
-		Update(FIGHT_CHASE);
-		// just use the chase logic
-	}
-	else if (tooClose)
-		m_bot->MoveBackward();
-
 	if (!(walkToEnemyFirst && tooFar))
 	{
 		if (goLeft)
-			m_bot->StrafeLeft();
+		{
+			TraceResult tr;
+			UTIL_MakeVectors(m_bot->pev->v_angle);
+			Vector vecSrc = m_bot->pev->origin;
+			Vector vecEnd = vecSrc - gpGlobals->v_right * HalfHumanWidth;
+
+			UTIL_TraceLine(vecSrc, vecEnd, dont_ignore_monsters, ENT(m_bot->pev), &tr);
+
+			CNavArea* area = TheNavAreaGrid.GetNavArea(&tr.vecEndPos);
+
+			if(area)
+				m_bot->StrafeLeft();
+			//else
+				//m_bot->StrafeRight();
+		}
 		else
-			m_bot->StrafeRight();
+		{
+			TraceResult tr;
+			UTIL_MakeVectors(m_bot->pev->v_angle);
+			Vector vecSrc = m_bot->pev->origin;
+			Vector vecEnd = vecSrc + gpGlobals->v_right * HalfHumanWidth;
+
+			UTIL_TraceLine(vecSrc, vecEnd, dont_ignore_monsters, ENT(m_bot->pev), &tr);
+
+			CNavArea* area = TheNavAreaGrid.GetNavArea(&tr.vecEndPos);
+
+			if (area)
+				m_bot->StrafeRight();
+			//else
+				//m_bot->StrafeLeft();
+		}
 	}
 }

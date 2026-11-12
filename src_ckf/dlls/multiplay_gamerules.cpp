@@ -2293,14 +2293,14 @@ CBasePlayer *CHalfLifeMultiplay::GetAssister(CBasePlayer *pKiller, CBasePlayer *
 		for(int i = 1; i <= gpGlobals->maxClients; i++)
 		{
 			pPlayer = (CBasePlayer *)UTIL_PlayerByIndex(i);
-			if (!pPlayer || !FNullEnt(pPlayer->pev)) continue;
+			if (!pPlayer || FNullEnt(pPlayer->pev)) continue;
 			if(pPlayer->m_iTeam != pKiller->m_iTeam) continue;
 			if(pPlayer == pKiller) continue;
 			if(pPlayer == pVictim) continue;
 
 			//find the teammate the highest damage done by which
-			iAmount = pVictim->DmgRecord_Get(pPlayer, 30.0f);
-			if(iHighest < 0 || iHighest < iAmount)
+			iAmount = pVictim->DmgRecord_Get(pPlayer, 3.0f);
+			if (iAmount > 0 && iHighest < iAmount)
 			{
 				iHighest = iAmount;
 				pAssister = pPlayer;

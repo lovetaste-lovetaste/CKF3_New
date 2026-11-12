@@ -35,11 +35,9 @@ void CSapper::Precache(void)
 	PRECACHE_MODEL("models/CKF_III/v_sapper.mdl");
 	PRECACHE_SOUND("CKF_III/sapper_plant.wav");
 
-	m_flBuildingDamage = 12.5;
-	m_flBaseDamage = 0.0;
-	m_flBaseReloadRate = -1.0f;
+	SetupDefault();
+	m_flBuildingDamage = 12.5; // specific to the sapper!!!!!!!!!!!
 	m_flBaseMaxRange = 80;
-	m_iBaseExtraShots = -1;
 }
 
 int CSapper::GetItemInfo(ItemInfo *p)

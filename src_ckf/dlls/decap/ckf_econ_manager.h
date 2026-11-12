@@ -98,10 +98,12 @@ enum
     // on kill
     // these are scanned on KillReward()
     KILL_START, // dont use this
+
     KILL_CRITS,
     KILL_HEAL,
     KILL_DISGUISE,
     KILL_NO_SCREAM, // TODO
+
     KILL_END,   // dont use this
     //--------------------------/
 
@@ -111,7 +113,9 @@ enum
     // on hit
     // these are in the TakeDamage thingy
     HIT_START,  // dont use this
+
     HIT_HEAL,
+
     HIT_END,    // dont use this
     //--------------------------/
 
@@ -119,9 +123,12 @@ enum
     // on hit checks
     // this is specifically for things that require the target to be under specific conditions
     // basically just a boolean
+    // ex: if target is on fire and weapon has HITCOND_CRIT_BURNING, then crit that weapon
     HITCOND_START,  // dont use this
+
     HITCOND_CRIT_BURNING,
     HITCOND_CRIT_MINICRIT,  // TODO
+    
     HITCOND_END,    // dont use this
 
     //--------------------------/
@@ -157,6 +164,8 @@ public:
     float GetAttributeValue(const CBasePlayerWeapon* pWeapon, int iAttrID, float flDefault);
     int GetAttributeInt(const CBasePlayerWeapon* pWeapon, int iAttrID, int iDefault);
     bool GetAttributeBool(const CBasePlayerWeapon* pWeapon, int iAttrID);
+    // TODO: int GetAttributeBits that just returns a combined bitfield of all the attributes
+    // honestly i should probably make the attribute thing a int bit anyway.....
     const ItemDef* GetItemDefFor(const CBasePlayerWeapon* pWeapon);
     const ItemDef* GetItemDef(int iIndex);
     char* GetViewmodel(const CBasePlayerWeapon* pWeapon, char* szDefaultViewmodel);

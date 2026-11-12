@@ -37,10 +37,6 @@
 extern cvar_t cv_bot_debug;
 extern cvar_t* g_psv_gravity;
 
-static const float BotCommandInterval = 1.0f / 30.0f;
-static const float BotFullThinkInterval = BotCommandInterval * 10.0f; // for every 10 commands, one full think is applied
-// just ten ticks though so its fine
-
 CBot::CBot()
 	: m_actionInterface(new CTFBotIdle), m_aimInterface(this)
 {
@@ -64,7 +60,104 @@ CBot::CBot()
 	m_actionInterface.m_scenarioMoniterInterface.SetWinLostActions(new CTFBotSeekAndDestroy, new CTFBotRetreat);
 	m_actionInterface.m_fightManager.SetBot(this);
 }
-//void SelectDesiredWeapon()
+
+void CBot::SelectDesiredWeapon(void)
+{
+	if (!HasEnemy())
+	{
+		// do idle things
+		// todo: switch to weapons that need reload
+		// todo: bots assist medics when getting healed if they have a self harming item
+		// todo: idle shuffling ( spamming weapon switches #ADHD )
+		return;
+	}
+
+//	if (!m_pActiveItem)
+	//	return;
+	
+	CBasePlayerItem* primary = m_rgpPlayerItems[WEAPON_SLOT_PRIMARY];
+	if (!primary || !primary->IsWeapon())
+		primary = NULL;
+
+	CBasePlayerItem* secondary = m_rgpPlayerItems[WEAPON_SLOT_SECONDARY];
+	if (!secondary || !secondary->IsWeapon())
+		secondary = NULL;
+
+	CBasePlayerItem* melee = m_rgpPlayerItems[WEAPON_SLOT_MELEE];
+	if (!melee || !melee->IsWeapon())
+		melee = NULL;
+	
+	CBasePlayerWeapon* gun = NULL; // CBasePlayerWeapon
+
+	if (primary)
+	{
+		gun = (CBasePlayerWeapon*)primary;
+	}
+	else if (secondary)
+	{
+		gun = (CBasePlayerWeapon*)secondary;
+	}
+	else
+	{
+		gun = (CBasePlayerWeapon*)melee;
+	}
+	
+	CBaseEntity* threat = GetEnemy();
+	switch (m_iClass)
+	{
+	case CLASS_MEDIC:
+		
+		if ((threat->pev->origin - pev->origin).Length() < 256.0f)
+			gun = (CBasePlayerWeapon*)melee;
+
+		break;
+	case CLASS_SNIPER:
+		
+		//float range = (threat->pev->origin - pev->origin).Length();
+
+		if ((threat->pev->origin - pev->origin).Length() > 512.0f)
+			gun = (CBasePlayerWeapon*)primary;
+		else if ((threat->pev->origin - pev->origin).Length() < 256.0f)
+			gun = (CBasePlayerWeapon*)melee;
+		else
+			gun = (CBasePlayerWeapon*)secondary;
+
+		break;
+	case CLASS_SOLDIER:
+	case CLASS_DEMOMAN:
+
+		// soldiers and demomen do not wanna use their explosives when in close range, so they do their ttk calcs while ignoring primary as to not blow themselves up
+		// if they are far enough so that it isnt a problem, then it just uses the default case INTENTIONALLY!!!!!!!!!!!!!!!! 
+		
+		// TODO: give the radius logic to the econ manager so that bots can change this depending on the actual radius of the weapons used ( direct hit, loch n load )
+		if ((threat->pev->origin - pev->origin).Length() < 112.0f)
+		{
+			float ttks = WeaponTimeToKillEnt((CBasePlayerWeapon*)secondary, threat);
+			float ttkm = WeaponTimeToKillEnt((CBasePlayerWeapon*)melee, threat);
+
+			gun = ttks > ttkm ? (CBasePlayerWeapon*)melee : (CBasePlayerWeapon*)secondary;
+			break;
+		}
+				
+	default:
+		// if the melee weapon is quicker than BOTH the primary and melee, then use it
+		// otherwise, use either the primary or the secondary depending on whichever one is faster
+
+		float ttkp = WeaponTimeToKillEnt((CBasePlayerWeapon*)primary, threat);
+		float ttks = WeaponTimeToKillEnt((CBasePlayerWeapon*)secondary, threat);
+		float ttkm = WeaponTimeToKillEnt((CBasePlayerWeapon*)melee, threat);
+
+		if ((ttkm < ttkp && ttkm < ttks))
+			gun = (CBasePlayerWeapon*)melee;
+		else if (ttkp > ttks)
+			gun = (CBasePlayerWeapon*)secondary;
+
+		break;
+	}
+
+	SwitchWeapon(gun);
+}
+
 CTFAction* CBot::DesiredAction(int forceclass)
 {
 	int iClass = (forceclass && forceclass <= CLASS_SPY && forceclass >= CLASS_SCOUT) ? forceclass : m_iClass;
@@ -584,23 +677,6 @@ void CBot::Update(void)
 	m_actionInterface.Update();
 }
 
-static void Bot_LookAt(CBaseEntity* self, const Vector& point)
-{
-	// this is temporary!!!!!
-
-	Vector to = point - (self->pev->origin + self->pev->view_ofs);
-
-	if (to.Length() < 1.0f)
-		return; // point is on the eye, avoid a zero vector
-
-	float dist2D = sqrtf(to.x * to.x + to.y * to.y);
-
-	self->pev->v_angle.x = -(float)(atan2(to.z, dist2D) * 180.0 / M_PI); // pitch
-	self->pev->v_angle.y = UTIL_VecToYaw(to);                            // yaw
-	self->pev->v_angle.z = 0.0f;
-	self->pev->ideal_yaw = self->pev->v_angle.y;
-}
-
 void CBot::Upkeep(void)
 {
 	if (pev->waterlevel >= 3)
@@ -701,6 +777,7 @@ void CBot::Upkeep(void)
 						// since they can still SEE the last known, they keep shooting at that point even if nobody is there
 						// the Center() check makes it so that bots keep aiming, but they dont actually shoot at it
 						// hastag REALISM!!!!!!!!!!!!!!!!!!!!!!!!!
+						// we should probably put this for all weapons lololol
 						else
 							PressSecondaryAttack();
 					}
@@ -757,6 +834,27 @@ void CBot::Upkeep(void)
 						PressPrimaryAttack();
 
 					break;
+				}
+				case WEAPON_ROCKETLAUNCHER:
+				{
+					Vector origin = enemy->pev->origin;
+					if (m_pathfollower.GetImprov()->IsVisible(origin))
+						m_aimPosition = origin;
+
+					int gravity = (int)g_psv_gravity->value * -1;
+					
+					float distance = (pev->origin - m_aimPosition).Length();
+					float time = distance / pWeapon->GetVelocity();
+					float gfactor = 0.5 * gravity * time * time;
+
+					Vector calc = m_aimPosition + enemy->pev->velocity * time;
+					calc.z = m_aimPosition.z + enemy->pev->velocity.z * time + gfactor;
+
+					if (m_pathfollower.GetImprov()->IsVisible(calc))
+						m_aimPosition = calc;
+
+					// THERE IS NO BREAK HERE INTENTIONALLY!!!!!!!!!!!!!!!!!!!!!!!
+					// this is so that the rocket launcher aims at the feet, but still uses the default case for weapon attacks
 				}
 				default:
 				{

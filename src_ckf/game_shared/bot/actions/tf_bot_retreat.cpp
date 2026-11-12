@@ -129,6 +129,8 @@ void CTFBotRetreat::Update(CBot* me)
 		CBaseEntity* threat = me->GetEnemy();
 		if (threat)
 		{
+			me->SelectDesiredWeapon();
+
 			RetreatPathBuilder retreat(me, threat, 500.0f);
 			if (retreat.m_foundValidPosition && me->MakePath(retreat.m_endArea))
 				retreating = true;

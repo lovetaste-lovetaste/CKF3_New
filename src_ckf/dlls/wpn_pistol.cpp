@@ -40,7 +40,7 @@ void CPistol::Precache(void)
 	PRECACHE_SOUND("CKF_III/pistol_shoot.wav");
 
 	m_usFireScript = PRECACHE_EVENT(1, "events/ckf_pistol.sc");
-
+	SetupDefault();
 	m_flBaseFiringRate = 0.167;
 	m_flBaseDamage = 15.0;
 	m_flBaseReloadRate = 1.25;

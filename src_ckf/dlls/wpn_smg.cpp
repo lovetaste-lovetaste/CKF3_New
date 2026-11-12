@@ -36,7 +36,7 @@ void CSMG::Precache(void)
 	PRECACHE_MODEL("models/CKF_III/v_smg.mdl");
 	PRECACHE_SOUND("CKF_III/smg_shoot.wav");
 	m_usFireScript = PRECACHE_EVENT(1, "events/ckf_smg.sc");
-
+	SetupDefault();
 	m_flBaseFiringRate = 0.1;
 	m_flBaseDamage = 8.0;
 	m_flBaseReloadRate = 1.4;

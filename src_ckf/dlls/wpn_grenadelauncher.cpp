@@ -42,7 +42,7 @@ void CGrenadeLauncher::Precache(void)
 	PRECACHE_SOUND("CKF_III/grenadelauncher_shoot.wav");
 
 	m_usFireScript = PRECACHE_EVENT(1, "events/ckf_launcher.sc");
-
+	SetupDefault();
 	m_flBaseFiringRate = 0.6;
 	m_flBaseDamage = 120.0;
 	m_flBaseReloadRate = 0.6;
